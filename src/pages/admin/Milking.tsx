@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { MilkingRecord, MilkingSession, Farm, Cattle } from '../../types';
-import { Plus, Edit, Trash2, Milk } from 'lucide-react';
+import { Plus, Edit, Trash2, Milk, Search } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import { useAuth } from '../../contexts/AuthContext';
+import { isSuperAdmin } from '../../lib/permissions';
 
 export default function Milking() {
   const [records, setRecords] = useState<MilkingRecord[]>([]);
@@ -13,6 +14,13 @@ export default function Milking() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MilkingRecord | null>(null);
+  const [filters, setFilters] = useState({
+    search: '',
+    farm: '',
+    session: '',
+    dateFrom: '',
+    dateTo: '',
+  });
   const [formData, setFormData] = useState({
     farm_id: '',
     cow_id: '',
@@ -75,6 +83,10 @@ export default function Milking() {
   };
 
   const canEditDelete = (record: MilkingRecord) => {
+    // Super Admin can always edit/delete
+    if (isSuperAdmin(user?.role)) {
+      return true;
+    }
     const recordDate = new Date(record.created_at);
     const now = new Date();
     const diffMinutes = (now.getTime() - recordDate.getTime()) / (1000 * 60);
@@ -137,8 +149,10 @@ export default function Milking() {
 
   const handleEdit = (record: MilkingRecord) => {
     if (!canEditDelete(record)) {
-      alert('Cannot edit record after 30 minutes. Please request approval.');
-      return;
+      if (!isSuperAdmin(user?.role)) {
+        alert('Cannot edit record after 30 minutes. Please request approval.');
+        return;
+      }
     }
     setEditingRecord(record);
     setFormData({
@@ -157,8 +171,10 @@ export default function Milking() {
   const handleDelete = async (id: string) => {
     const record = records.find((r) => r.id === id);
     if (!record || !canEditDelete(record)) {
-      alert('Cannot delete record after 30 minutes. Please request approval.');
-      return;
+      if (!isSuperAdmin(user?.role)) {
+        alert('Cannot delete record after 30 minutes. Please request approval.');
+        return;
+      }
     }
 
     if (!confirm('Are you sure you want to delete this milking record?')) return;
@@ -198,6 +214,56 @@ export default function Milking() {
         </button>
       </div>
 
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search by cow tag..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <select
+            value={filters.farm}
+            onChange={(e) => setFilters({ ...filters, farm: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">All Farms</option>
+            {farms.map((farm) => (
+              <option key={farm.id} value={farm.id}>{farm.name}</option>
+            ))}
+          </select>
+          <select
+            value={filters.session}
+            onChange={(e) => setFilters({ ...filters, session: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">All Sessions</option>
+            <option value="Morning">Morning</option>
+            <option value="Afternoon">Afternoon</option>
+            <option value="Evening">Evening</option>
+          </select>
+          <input
+            type="date"
+            value={filters.dateFrom}
+            onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+            placeholder="From Date"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+          <input
+            type="date"
+            value={filters.dateTo}
+            onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+            placeholder="To Date"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -211,7 +277,17 @@ export default function Milking() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {records.map((record) => {
+            {records.filter((record) => {
+              const cow = cattle.find((c) => c.id === record.cow_id);
+              const farm = farms.find((f) => f.id === record.farm_id);
+              const matchesSearch = filters.search === '' || 
+                cow?.tag_id.toLowerCase().includes(filters.search.toLowerCase());
+              const matchesFarm = filters.farm === '' || record.farm_id === filters.farm;
+              const matchesSession = filters.session === '' || record.session === filters.session;
+              const matchesDateFrom = filters.dateFrom === '' || new Date(record.date) >= new Date(filters.dateFrom);
+              const matchesDateTo = filters.dateTo === '' || new Date(record.date) <= new Date(filters.dateTo);
+              return matchesSearch && matchesFarm && matchesSession && matchesDateFrom && matchesDateTo;
+            }).map((record) => {
               const cow = cattle.find((c) => c.id === record.cow_id);
               const staffMember = staff.find((s) => s.id === record.staff_id);
               const canEdit = canEditDelete(record);

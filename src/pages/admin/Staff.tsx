@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Staff as StaffType, CasualWage, Farm, StaffRole, PaymentMethod } from '../../types';
-import { Plus, Edit, Trash2, Users, DollarSign, Calendar, Key } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, DollarSign, Calendar, Key, Search } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -56,6 +56,18 @@ export default function Staff() {
     days: '',
     rate: '',
     payment_method: 'Cash' as PaymentMethod,
+  });
+  const [staffFilters, setStaffFilters] = useState({
+    search: '',
+    role: '',
+    farm: '',
+    status: 'all', // all, active, inactive
+  });
+  const [wageFilters, setWageFilters] = useState({
+    search: '',
+    farm: '',
+    dateFrom: '',
+    dateTo: '',
   });
   const { user, supabaseUser } = useAuth();
 
@@ -537,6 +549,54 @@ export default function Staff() {
       {/* Staff Tab */}
       {activeTab === 'staff' && (
         <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, phone..."
+                  value={staffFilters.search}
+                  onChange={(e) => setStaffFilters({ ...staffFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={staffFilters.role}
+                onChange={(e) => setStaffFilters({ ...staffFilters, role: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Roles</option>
+                <option value="Super Admin">Super Admin</option>
+                <option value="Branch Manager">Branch Manager</option>
+                <option value="Vet">Vet</option>
+                <option value="Storekeeper">Storekeeper</option>
+                <option value="Accountant">Accountant</option>
+                <option value="Field Staff">Field Staff</option>
+              </select>
+              <select
+                value={staffFilters.farm}
+                onChange={(e) => setStaffFilters({ ...staffFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+              <select
+                value={staffFilters.status}
+                onChange={(e) => setStaffFilters({ ...staffFilters, status: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               onClick={() => {
@@ -565,7 +625,18 @@ export default function Staff() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {staffList.map((member) => {
+                {staffList.filter((member) => {
+                  const matchesSearch = staffFilters.search === '' || 
+                    member.name.toLowerCase().includes(staffFilters.search.toLowerCase()) ||
+                    member.email?.toLowerCase().includes(staffFilters.search.toLowerCase()) ||
+                    member.phone?.toLowerCase().includes(staffFilters.search.toLowerCase());
+                  const matchesRole = staffFilters.role === '' || member.role === staffFilters.role;
+                  const matchesFarm = staffFilters.farm === '' || member.farm_id === staffFilters.farm;
+                  const matchesStatus = staffFilters.status === 'all' || 
+                    (staffFilters.status === 'active' && member.is_active) ||
+                    (staffFilters.status === 'inactive' && !member.is_active);
+                  return matchesSearch && matchesRole && matchesFarm && matchesStatus;
+                }).map((member) => {
                   const farm = farms.find((f) => f.id === member.farm_id);
                   return (
                     <tr key={member.id} className="hover:bg-gray-50">
@@ -700,6 +771,46 @@ export default function Staff() {
       {/* Casual Wages Tab */}
       {activeTab === 'wages' && (
         <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search by staff name, task..."
+                  value={wageFilters.search}
+                  onChange={(e) => setWageFilters({ ...wageFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={wageFilters.farm}
+                onChange={(e) => setWageFilters({ ...wageFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={wageFilters.dateFrom}
+                onChange={(e) => setWageFilters({ ...wageFilters, dateFrom: e.target.value })}
+                placeholder="From Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <input
+                type="date"
+                value={wageFilters.dateTo}
+                onChange={(e) => setWageFilters({ ...wageFilters, dateTo: e.target.value })}
+                placeholder="To Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               onClick={() => {
@@ -727,7 +838,16 @@ export default function Staff() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {casualWages.map((wage) => {
+                {casualWages.filter((wage) => {
+                  const staffMember = staffList.find((s) => s.id === wage.staff_id);
+                  const matchesSearch = wageFilters.search === '' || 
+                    staffMember?.name.toLowerCase().includes(wageFilters.search.toLowerCase()) ||
+                    wage.task.toLowerCase().includes(wageFilters.search.toLowerCase());
+                  const matchesFarm = wageFilters.farm === '' || wage.farm_id === wageFilters.farm;
+                  const matchesDateFrom = wageFilters.dateFrom === '' || new Date(wage.date) >= new Date(wageFilters.dateFrom);
+                  const matchesDateTo = wageFilters.dateTo === '' || new Date(wage.date) <= new Date(wageFilters.dateTo);
+                  return matchesSearch && matchesFarm && matchesDateFrom && matchesDateTo;
+                }).map((wage) => {
                   const staffMember = staffList.find((s) => s.id === wage.staff_id);
                   const farm = farms.find((f) => f.id === wage.farm_id);
                   return (

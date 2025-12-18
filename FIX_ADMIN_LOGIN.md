@@ -161,3 +161,4 @@ If the last query shows both `auth_id` and `user_id` matching, you're all set!
 If none of these work, the issue might be with the RLS policies. Run `fix_users_rls.sql` to ensure policies are set up correctly.
 
 
+

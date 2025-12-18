@@ -39,7 +39,6 @@ const AVAILABLE_MODULES = [
   { path: '/admin/reports', name: 'Reports' },
   { path: '/admin/approvals', name: 'Approvals' },
   { path: '/admin/ecommerce', name: 'Ecommerce' },
-  { path: '/admin/orders', name: 'Orders' },
   { path: '/admin/profile', name: 'Profile' },
 ];
 
@@ -639,5 +638,6 @@ export default function RolePermissions() {
     </div>
   );
 }
+
 
 

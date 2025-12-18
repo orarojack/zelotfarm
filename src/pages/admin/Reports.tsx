@@ -1,13 +1,55 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Farm } from '../../types';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, ChevronDown } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+type ReportType = 
+  | 'comprehensive'
+  | 'financial_summary'
+  | 'revenue'
+  | 'expenses'
+  | 'profit_loss'
+  | 'milk_production'
+  | 'egg_collection'
+  | 'broiler_production'
+  | 'cattle_inventory'
+  | 'cattle_breeding'
+  | 'inventory_stock'
+  | 'inventory_movements'
+  | 'low_stock_alerts'
+  | 'staff_wages'
+  | 'ecommerce_orders'
+  | 'ecommerce_sales'
+  | 'farm_performance'
+  | 'production_summary';
+
+const REPORT_TYPES: { value: ReportType; label: string; description: string }[] = [
+  { value: 'comprehensive', label: 'Comprehensive Report', description: 'All data including revenue, expenses, production, and inventory' },
+  { value: 'financial_summary', label: 'Financial Summary', description: 'Overview of revenue, expenses, and profit' },
+  { value: 'revenue', label: 'Revenue Report', description: 'Detailed revenue by type and payment method' },
+  { value: 'expenses', label: 'Expenses Report', description: 'Detailed expenses by category and payment method' },
+  { value: 'profit_loss', label: 'Profit & Loss Statement', description: 'Complete P&L statement with breakdowns' },
+  { value: 'milk_production', label: 'Milk Production Report', description: 'Daily milk yields by farm and session' },
+  { value: 'egg_collection', label: 'Egg Collection Report', description: 'Daily egg collections by farm' },
+  { value: 'broiler_production', label: 'Broiler Production Report', description: 'Broiler batch performance and harvest data' },
+  { value: 'cattle_inventory', label: 'Cattle Inventory Report', description: 'Complete cattle inventory by farm and status' },
+  { value: 'cattle_breeding', label: 'Cattle Breeding Report', description: 'Breeding records and lineage information' },
+  { value: 'inventory_stock', label: 'Inventory Stock Report', description: 'Current stock levels by category' },
+  { value: 'inventory_movements', label: 'Inventory Movements Report', description: 'Stock movements (in/out/transfer)' },
+  { value: 'low_stock_alerts', label: 'Low Stock Alerts', description: 'Items below minimum stock levels' },
+  { value: 'staff_wages', label: 'Staff Wages Report', description: 'Casual wages and staff payments' },
+  { value: 'ecommerce_orders', label: 'E-commerce Orders Report', description: 'Customer orders and order status' },
+  { value: 'ecommerce_sales', label: 'E-commerce Sales Report', description: 'Sales revenue from online orders' },
+  { value: 'farm_performance', label: 'Farm Performance Report', description: 'Overall performance metrics by farm' },
+  { value: 'production_summary', label: 'Production Summary', description: 'Summary of all production activities' },
+];
+
 export default function Reports() {
   const [farms, setFarms] = useState<Farm[]>([]);
+  const [selectedReportType, setSelectedReportType] = useState<ReportType>('comprehensive');
   const [selectedFarm, setSelectedFarm] = useState<string>('all');
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setMonth(new Date().getMonth() - 1)));
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -101,8 +143,9 @@ export default function Reports() {
     const farmName = selectedFarm === 'all' ? 'All Farms' : farms.find((f) => f.id === selectedFarm)?.name || 'All Farms';
 
     // Title
+    const reportTypeLabel = REPORT_TYPES.find(r => r.value === selectedReportType)?.label || 'Farm Report';
     doc.setFontSize(18);
-    doc.text('Zealot AgriWorks - Farm Report', 14, 20);
+    doc.text(`Zealot AgriWorks - ${reportTypeLabel}`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Farm: ${farmName}`, 14, 30);
     doc.text(`Period: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`, 14, 36);
@@ -176,12 +219,41 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
+          {reportData && (
+            <p className="text-sm text-gray-600 mt-1">
+              {REPORT_TYPES.find(r => r.value === selectedReportType)?.label}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+            <div className="relative">
+              <select
+                value={selectedReportType}
+                onChange={(e) => setSelectedReportType(e.target.value as ReportType)}
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 appearance-none bg-white pr-10"
+              >
+                {REPORT_TYPES.map((report) => (
+                  <option key={report.value} value={report.value}>
+                    {report.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+            </div>
+            {REPORT_TYPES.find(r => r.value === selectedReportType) && (
+              <p className="mt-1 text-xs text-gray-500">
+                {REPORT_TYPES.find(r => r.value === selectedReportType)?.description}
+              </p>
+            )}
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Farm</label>
             <select

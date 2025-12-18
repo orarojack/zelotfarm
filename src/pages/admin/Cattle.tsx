@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Cattle as CattleType, Farm, CattleGender, CattleStatus } from '../../types';
-import { Plus, Edit, Trash2, Circle, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Circle, Eye, Search } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 
 export default function Cattle() {
@@ -24,12 +24,18 @@ export default function Cattle() {
     father_tag: '',
     notes: '',
   });
-  const [filterFarm, setFilterFarm] = useState<string>('all');
+  const [filters, setFilters] = useState({
+    search: '',
+    farm: 'all',
+    breed: '',
+    gender: '',
+    status: '',
+  });
 
   useEffect(() => {
     fetchFarms();
     fetchCattle();
-  }, [filterFarm]);
+  }, [filters.farm]);
 
   const fetchFarms = async () => {
     const { data } = await supabase.from('farms').select('*').eq('type', 'Dairy');
@@ -40,8 +46,8 @@ export default function Cattle() {
     try {
       let query = supabase.from('cattle').select('*').order('created_at', { ascending: false });
       
-      if (filterFarm !== 'all') {
-        query = query.eq('farm_id', filterFarm);
+      if (filters.farm !== 'all') {
+        query = query.eq('farm_id', filters.farm);
       }
 
       const { data, error } = await query;
@@ -153,20 +159,60 @@ export default function Cattle() {
         </button>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Filter by Farm
-        </label>
-        <select
-          value={filterFarm}
-          onChange={(e) => setFilterFarm(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-        >
-          <option value="all">All Farms</option>
-          {farms.map((farm) => (
-            <option key={farm.id} value={farm.id}>{farm.name}</option>
-          ))}
-        </select>
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search by tag ID, breed..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <select
+            value={filters.farm}
+            onChange={(e) => setFilters({ ...filters, farm: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="all">All Farms</option>
+            {farms.map((farm) => (
+              <option key={farm.id} value={farm.id}>{farm.name}</option>
+            ))}
+          </select>
+          <select
+            value={filters.breed}
+            onChange={(e) => setFilters({ ...filters, breed: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">All Breeds</option>
+            {[...new Set(cattle.map(c => c.breed))].map((breed) => (
+              <option key={breed} value={breed}>{breed}</option>
+            ))}
+          </select>
+          <select
+            value={filters.gender}
+            onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">All Genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">All Status</option>
+            <option value="Calf">Calf</option>
+            <option value="Heifer">Heifer</option>
+            <option value="Cow">Cow</option>
+            <option value="Bull">Bull</option>
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -182,7 +228,15 @@ export default function Cattle() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {cattle.map((c) => (
+            {cattle.filter((c) => {
+              const matchesSearch = filters.search === '' || 
+                c.tag_id.toLowerCase().includes(filters.search.toLowerCase()) ||
+                c.breed.toLowerCase().includes(filters.search.toLowerCase());
+              const matchesBreed = filters.breed === '' || c.breed === filters.breed;
+              const matchesGender = filters.gender === '' || c.gender === filters.gender;
+              const matchesStatus = filters.status === '' || c.status === filters.status;
+              return matchesSearch && matchesBreed && matchesGender && matchesStatus;
+            }).map((c) => (
               <tr key={c.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">

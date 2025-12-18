@@ -49,8 +49,25 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-            <LogIn className="w-8 h-8 text-green-600" />
+          <div className="relative inline-block">
+            <img 
+              src="/agriworkslogo.jpeg" 
+              alt="ZEALOT AGRIWORKS LTD" 
+              className="h-20 w-auto mx-auto mb-4"
+              onError={(e) => {
+                // Hide image and show icon fallback
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const fallback = parent.querySelector('.logo-fallback') as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }
+              }}
+            />
+            <div className="logo-fallback inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4 hidden">
+              <LogIn className="w-8 h-8 text-green-600" />
+            </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Zealot AgriWorks</h1>
           <p className="text-gray-600 mt-2">Staff Management System</p>

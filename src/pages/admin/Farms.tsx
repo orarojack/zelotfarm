@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Farm, FarmType } from '../../types';
-import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Search } from 'lucide-react';
 
 export default function Farms() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
+  const [filters, setFilters] = useState({
+    search: '',
+    type: '',
+    location: '',
+  });
   const [formData, setFormData] = useState({
     name: '',
     type: 'Dairy' as FarmType,
@@ -123,6 +128,42 @@ export default function Farms() {
         </button>
       </div>
 
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search by farm name..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <select
+            value={filters.type}
+            onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">All Types</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Broiler">Broiler</option>
+            <option value="Layer">Layer</option>
+          </select>
+          <select
+            value={filters.location}
+            onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">All Locations</option>
+            {[...new Set(farms.map(f => f.location))].map((location) => (
+              <option key={location} value={location}>{location}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -142,7 +183,13 @@ export default function Farms() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {farms.map((farm) => (
+            {farms.filter((farm) => {
+              const matchesSearch = filters.search === '' || 
+                farm.name.toLowerCase().includes(filters.search.toLowerCase());
+              const matchesType = filters.type === '' || farm.type === filters.type;
+              const matchesLocation = filters.location === '' || farm.location === filters.location;
+              return matchesSearch && matchesType && matchesLocation;
+            }).map((farm) => (
               <tr key={farm.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">

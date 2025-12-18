@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Expense, Revenue, Farm, ExpenseCategory, RevenueType, PaymentMethod } from '../../types';
-import { Plus, Edit, Trash2, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Edit, Trash2, DollarSign, TrendingUp, TrendingDown, Search } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import { useAuth } from '../../contexts/AuthContext';
+import { isSuperAdmin } from '../../lib/permissions';
 
 export default function Finance() {
   const [activeTab, setActiveTab] = useState<'expenses' | 'revenue'>('expenses');
@@ -30,6 +31,22 @@ export default function Finance() {
     customer: '',
     revenue_type: 'Milk' as RevenueType,
     payment_method: 'Cash' as PaymentMethod,
+  });
+  const [expenseFilters, setExpenseFilters] = useState({
+    search: '',
+    farm: '',
+    category: '',
+    paymentMethod: '',
+    dateFrom: '',
+    dateTo: '',
+  });
+  const [revenueFilters, setRevenueFilters] = useState({
+    search: '',
+    farm: '',
+    revenueType: '',
+    paymentMethod: '',
+    dateFrom: '',
+    dateTo: '',
   });
   const { user } = useAuth();
 
@@ -82,6 +99,10 @@ export default function Finance() {
   };
 
   const canEditDelete = (createdAt: string) => {
+    // Super Admin can always edit/delete
+    if (isSuperAdmin(user?.role)) {
+      return true;
+    }
     const recordDate = new Date(createdAt);
     const now = new Date();
     const diffMinutes = (now.getTime() - recordDate.getTime()) / (1000 * 60);
@@ -105,8 +126,10 @@ export default function Finance() {
 
       if (editingExpense) {
         if (!canEditDelete(editingExpense.created_at)) {
-          alert('Cannot edit record after 30 minutes. Please request approval.');
-          return;
+          if (!isSuperAdmin(user?.role)) {
+            alert('Cannot edit record after 30 minutes. Please request approval.');
+            return;
+          }
         }
         const { error } = await supabase
           .from('expenses')
@@ -152,8 +175,10 @@ export default function Finance() {
 
       if (editingRevenue) {
         if (!canEditDelete(editingRevenue.created_at)) {
-          alert('Cannot edit record after 30 minutes. Please request approval.');
-          return;
+          if (!isSuperAdmin(user?.role)) {
+            alert('Cannot edit record after 30 minutes. Please request approval.');
+            return;
+          }
         }
         const { error } = await supabase
           .from('revenue')
@@ -231,6 +256,70 @@ export default function Finance() {
       {/* Expenses Tab */}
       {activeTab === 'expenses' && (
         <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search by description..."
+                  value={expenseFilters.search}
+                  onChange={(e) => setExpenseFilters({ ...expenseFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={expenseFilters.farm}
+                onChange={(e) => setExpenseFilters({ ...expenseFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+              <select
+                value={expenseFilters.category}
+                onChange={(e) => setExpenseFilters({ ...expenseFilters, category: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                <option value="Feeds">Feeds</option>
+                <option value="Medicines">Medicines</option>
+                <option value="Equipment">Equipment</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+              <select
+                value={expenseFilters.paymentMethod}
+                onChange={(e) => setExpenseFilters({ ...expenseFilters, paymentMethod: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">All Payment Methods</option>
+                <option value="Cash">Cash</option>
+                <option value="MPesa">MPesa</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cheque">Cheque</option>
+              </select>
+              <input
+                type="date"
+                value={expenseFilters.dateFrom}
+                onChange={(e) => setExpenseFilters({ ...expenseFilters, dateFrom: e.target.value })}
+                placeholder="From Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+              <input
+                type="date"
+                value={expenseFilters.dateTo}
+                onChange={(e) => setExpenseFilters({ ...expenseFilters, dateTo: e.target.value })}
+                placeholder="To Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               onClick={() => {
@@ -266,7 +355,16 @@ export default function Finance() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {expenses.map((expense) => {
+                {expenses.filter((expense) => {
+                  const matchesSearch = expenseFilters.search === '' || 
+                    expense.description.toLowerCase().includes(expenseFilters.search.toLowerCase());
+                  const matchesFarm = expenseFilters.farm === '' || expense.farm_id === expenseFilters.farm;
+                  const matchesCategory = expenseFilters.category === '' || expense.category === expenseFilters.category;
+                  const matchesPayment = expenseFilters.paymentMethod === '' || expense.payment_method === expenseFilters.paymentMethod;
+                  const matchesDateFrom = expenseFilters.dateFrom === '' || new Date(expense.date) >= new Date(expenseFilters.dateFrom);
+                  const matchesDateTo = expenseFilters.dateTo === '' || new Date(expense.date) <= new Date(expenseFilters.dateTo);
+                  return matchesSearch && matchesFarm && matchesCategory && matchesPayment && matchesDateFrom && matchesDateTo;
+                }).map((expense) => {
                   const farm = farms.find((f) => f.id === expense.farm_id);
                   const canEdit = canEditDelete(expense.created_at);
                   return (
@@ -324,6 +422,68 @@ export default function Finance() {
       {/* Revenue Tab */}
       {activeTab === 'revenue' && (
         <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search by customer..."
+                  value={revenueFilters.search}
+                  onChange={(e) => setRevenueFilters({ ...revenueFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={revenueFilters.farm}
+                onChange={(e) => setRevenueFilters({ ...revenueFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+              <select
+                value={revenueFilters.revenueType}
+                onChange={(e) => setRevenueFilters({ ...revenueFilters, revenueType: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Types</option>
+                <option value="Milk">Milk</option>
+                <option value="Eggs">Eggs</option>
+                <option value="Meat">Meat</option>
+                <option value="Other">Other</option>
+              </select>
+              <select
+                value={revenueFilters.paymentMethod}
+                onChange={(e) => setRevenueFilters({ ...revenueFilters, paymentMethod: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Payment Methods</option>
+                <option value="Cash">Cash</option>
+                <option value="MPesa">MPesa</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cheque">Cheque</option>
+              </select>
+              <input
+                type="date"
+                value={revenueFilters.dateFrom}
+                onChange={(e) => setRevenueFilters({ ...revenueFilters, dateFrom: e.target.value })}
+                placeholder="From Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <input
+                type="date"
+                value={revenueFilters.dateTo}
+                onChange={(e) => setRevenueFilters({ ...revenueFilters, dateTo: e.target.value })}
+                placeholder="To Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               onClick={() => {
@@ -359,7 +519,16 @@ export default function Finance() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {revenue.map((rev) => {
+                {revenue.filter((rev) => {
+                  const matchesSearch = revenueFilters.search === '' || 
+                    rev.customer.toLowerCase().includes(revenueFilters.search.toLowerCase());
+                  const matchesFarm = revenueFilters.farm === '' || rev.farm_id === revenueFilters.farm;
+                  const matchesType = revenueFilters.revenueType === '' || rev.revenue_type === revenueFilters.revenueType;
+                  const matchesPayment = revenueFilters.paymentMethod === '' || rev.payment_method === revenueFilters.paymentMethod;
+                  const matchesDateFrom = revenueFilters.dateFrom === '' || new Date(rev.date) >= new Date(revenueFilters.dateFrom);
+                  const matchesDateTo = revenueFilters.dateTo === '' || new Date(rev.date) <= new Date(revenueFilters.dateTo);
+                  return matchesSearch && matchesFarm && matchesType && matchesPayment && matchesDateFrom && matchesDateTo;
+                }).map((rev) => {
                   const farm = farms.find((f) => f.id === rev.farm_id);
                   const canEdit = canEditDelete(rev.created_at);
                   return (

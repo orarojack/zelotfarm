@@ -23,7 +23,6 @@ import RolePermissions from './pages/admin/RolePermissions';
 import Reports from './pages/admin/Reports';
 import Approvals from './pages/admin/Approvals';
 import Ecommerce from './pages/admin/Ecommerce';
-import Orders from './pages/admin/Orders';
 import Profile from './pages/admin/Profile';
 import CustomerLogin from './pages/customer/Login';
 import CustomerSignup from './pages/customer/Signup';
@@ -115,7 +114,6 @@ function App() {
               <Route path="reports" element={<Reports />} />
               <Route path="approvals" element={<Approvals />} />
               <Route path="ecommerce" element={<Ecommerce />} />
-              <Route path="orders" element={<Orders />} />
               <Route path="profile" element={<Profile />} />
             </Route>
 

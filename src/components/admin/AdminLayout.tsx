@@ -15,7 +15,6 @@ import {
   LogOut,
   ShieldCheck,
   ShoppingBag,
-  ShoppingCart,
   Activity,
   User,
   UserCog,
@@ -46,7 +45,6 @@ const allMenuItems: MenuItem[] = [
   { path: '/admin/reports', icon: FileText, label: 'Reports', roles: ['Super Admin', 'Branch Manager', 'Vet', 'Storekeeper', 'Accountant'] },
   { path: '/admin/approvals', icon: ShieldCheck, label: 'Approvals', roles: ['Super Admin', 'Branch Manager'] },
   { path: '/admin/ecommerce', icon: ShoppingBag, label: 'Ecommerce', roles: ['Super Admin', 'Branch Manager'] },
-  { path: '/admin/orders', icon: ShoppingCart, label: 'Orders', roles: ['Super Admin', 'Branch Manager'] },
 ];
 
 export default function AdminLayout() {
@@ -123,8 +121,27 @@ export default function AdminLayout() {
         <div className="h-full flex flex-col">
           {/* Logo */}
           <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-green-700">Zealot AgriWorks</h1>
-            <p className="text-sm text-gray-500 mt-1">Management System</p>
+            <div className="relative">
+              <img 
+                src="/agriworkslogo.jpeg" 
+                alt="ZEALOT AGRIWORKS LTD" 
+                className="h-12 w-auto mb-2"
+                onError={(e) => {
+                  // Hide image and show text fallback
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const fallback = parent.querySelector('.logo-fallback') as HTMLElement;
+                    if (fallback) fallback.style.display = 'block';
+                  }
+                }}
+              />
+              <div className="logo-fallback hidden">
+                <h1 className="text-2xl font-bold text-green-700">Zealot AgriWorks</h1>
+                <p className="text-sm text-gray-500 mt-1">Management System</p>
+              </div>
+            </div>
           </div>
 
           {/* Navigation */}

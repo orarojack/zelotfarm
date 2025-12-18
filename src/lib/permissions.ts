@@ -131,7 +131,6 @@ export function canAccessRoute(role: StaffRole | string, route: string): boolean
     '/admin/reports': ['Super Admin', 'Branch Manager', 'Vet', 'Storekeeper', 'Accountant'],
     '/admin/approvals': ['Super Admin', 'Branch Manager'],
     '/admin/ecommerce': ['Super Admin', 'Branch Manager'],
-    '/admin/orders': ['Super Admin', 'Branch Manager'],
     '/admin/profile': ['Super Admin', 'Branch Manager', 'Vet', 'Storekeeper', 'Accountant', 'Field Staff'],
     '/admin/users': ['Super Admin'],
     '/admin/role-permissions': ['Super Admin'],
@@ -147,5 +146,12 @@ export function canAccessRoute(role: StaffRole | string, route: string): boolean
   // For custom roles, we'll check dynamically via canAccessModule
   // This is a synchronous fallback - the async check happens in ProtectedRoute
   return false;
+}
+
+// Helper function to check if a user is Super Admin
+// Handles both default role and custom role named "Super Admin"
+export function isSuperAdmin(userRole: string | undefined | null): boolean {
+  if (!userRole) return false;
+  return userRole === 'Super Admin' || userRole.toLowerCase() === 'super admin';
 }
 

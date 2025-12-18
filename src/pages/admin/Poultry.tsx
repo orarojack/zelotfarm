@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { EggCollection, BroilerBatch, Farm } from '../../types';
-import { Plus, Edit, Trash2, Egg, Circle } from 'lucide-react';
+import { Plus, Edit, Trash2, Egg, Circle, Search } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import { useAuth } from '../../contexts/AuthContext';
+import { isSuperAdmin } from '../../lib/permissions';
 
 export default function Poultry() {
   const [activeTab, setActiveTab] = useState<'layers' | 'broilers'>('layers');
@@ -33,6 +34,17 @@ export default function Poultry() {
     feed_consumption: '',
     mortality: '',
     notes: '',
+  });
+  const [eggFilters, setEggFilters] = useState({
+    search: '',
+    farm: '',
+    dateFrom: '',
+    dateTo: '',
+  });
+  const [broilerFilters, setBroilerFilters] = useState({
+    search: '',
+    farm: '',
+    status: '',
   });
   const { user } = useAuth();
 
@@ -93,6 +105,10 @@ export default function Poultry() {
   };
 
   const canEditDelete = (createdAt: string) => {
+    // Super Admin can always edit/delete
+    if (isSuperAdmin(user?.role)) {
+      return true;
+    }
     const recordDate = new Date(createdAt);
     const now = new Date();
     const diffMinutes = (now.getTime() - recordDate.getTime()) / (1000 * 60);
@@ -116,8 +132,10 @@ export default function Poultry() {
 
       if (editingEgg) {
         if (!canEditDelete(editingEgg.created_at)) {
-          alert('Cannot edit record after 30 minutes. Please request approval.');
-          return;
+          if (!isSuperAdmin(user?.role)) {
+            alert('Cannot edit record after 30 minutes. Please request approval.');
+            return;
+          }
         }
         const { error } = await supabase
           .from('egg_collections')
@@ -241,6 +259,46 @@ export default function Poultry() {
       {/* Layers Tab */}
       {activeTab === 'layers' && (
         <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={eggFilters.search}
+                  onChange={(e) => setEggFilters({ ...eggFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={eggFilters.farm}
+                onChange={(e) => setEggFilters({ ...eggFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.filter(f => f.type === 'Layer').map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={eggFilters.dateFrom}
+                onChange={(e) => setEggFilters({ ...eggFilters, dateFrom: e.target.value })}
+                placeholder="From Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <input
+                type="date"
+                value={eggFilters.dateTo}
+                onChange={(e) => setEggFilters({ ...eggFilters, dateTo: e.target.value })}
+                placeholder="To Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               onClick={() => {
@@ -275,7 +333,15 @@ export default function Poultry() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {eggCollections.map((collection) => {
+                {eggCollections.filter((collection) => {
+                  const farm = farms.find((f) => f.id === collection.farm_id);
+                  const matchesSearch = eggFilters.search === '' || 
+                    farm?.name.toLowerCase().includes(eggFilters.search.toLowerCase());
+                  const matchesFarm = eggFilters.farm === '' || collection.farm_id === eggFilters.farm;
+                  const matchesDateFrom = eggFilters.dateFrom === '' || new Date(collection.date) >= new Date(eggFilters.dateFrom);
+                  const matchesDateTo = eggFilters.dateTo === '' || new Date(collection.date) <= new Date(eggFilters.dateTo);
+                  return matchesSearch && matchesFarm && matchesDateFrom && matchesDateTo;
+                }).map((collection) => {
                   const farm = farms.find((f) => f.id === collection.farm_id);
                   const staffMember = staff.find((s) => s.id === collection.staff_id);
                   const canEdit = canEditDelete(collection.created_at);
@@ -332,6 +398,41 @@ export default function Poultry() {
       {/* Broilers Tab */}
       {activeTab === 'broilers' && (
         <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search by batch number..."
+                  value={broilerFilters.search}
+                  onChange={(e) => setBroilerFilters({ ...broilerFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={broilerFilters.farm}
+                onChange={(e) => setBroilerFilters({ ...broilerFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.filter(f => f.type === 'Broiler').map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+              <select
+                value={broilerFilters.status}
+                onChange={(e) => setBroilerFilters({ ...broilerFilters, status: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               onClick={() => {
@@ -369,7 +470,17 @@ export default function Poultry() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {broilerBatches.map((batch) => {
+                {broilerBatches.filter((batch) => {
+                  const farm = farms.find((f) => f.id === batch.farm_id);
+                  const matchesSearch = broilerFilters.search === '' || 
+                    batch.batch_number.toLowerCase().includes(broilerFilters.search.toLowerCase());
+                  const matchesFarm = broilerFilters.farm === '' || batch.farm_id === broilerFilters.farm;
+                  const isActive = !batch.end_date;
+                  const matchesStatus = broilerFilters.status === '' || 
+                    (broilerFilters.status === 'active' && isActive) ||
+                    (broilerFilters.status === 'completed' && !isActive);
+                  return matchesSearch && matchesFarm && matchesStatus;
+                }).map((batch) => {
                   const farm = farms.find((f) => f.id === batch.farm_id);
                   return (
                     <tr key={batch.id} className="hover:bg-gray-50">

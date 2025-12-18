@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { InventoryItem, StockMovement, Farm, InventoryCategory } from '../../types';
-import { Plus, Edit, Trash2, Package, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ArrowRight, ArrowLeft, AlertCircle, Search } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Inventory() {
@@ -32,6 +32,19 @@ export default function Inventory() {
     date: new Date().toISOString().split('T')[0],
     to_farm_id: '',
     notes: '',
+  });
+  const [itemFilters, setItemFilters] = useState({
+    search: '',
+    farm: '',
+    category: '',
+    lowStock: false,
+  });
+  const [movementFilters, setMovementFilters] = useState({
+    search: '',
+    farm: '',
+    movementType: '',
+    dateFrom: '',
+    dateTo: '',
   });
   const { user } = useAuth();
 
@@ -240,6 +253,53 @@ export default function Inventory() {
       {/* Items Tab */}
       {activeTab === 'items' && (
         <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search by item name..."
+                  value={itemFilters.search}
+                  onChange={(e) => setItemFilters({ ...itemFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={itemFilters.farm}
+                onChange={(e) => setItemFilters({ ...itemFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+              <select
+                value={itemFilters.category}
+                onChange={(e) => setItemFilters({ ...itemFilters, category: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                <option value="Feeds">Feeds</option>
+                <option value="Medicines">Medicines</option>
+                <option value="Equipment">Equipment</option>
+                <option value="Supplies">Supplies</option>
+                <option value="Other">Other</option>
+              </select>
+              <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  checked={itemFilters.lowStock}
+                  onChange={(e) => setItemFilters({ ...itemFilters, lowStock: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Low Stock Only</span>
+              </label>
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               onClick={() => {
@@ -267,7 +327,15 @@ export default function Inventory() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {items.map((item) => {
+                {items.filter((item) => {
+                  const matchesSearch = itemFilters.search === '' || 
+                    item.name.toLowerCase().includes(itemFilters.search.toLowerCase());
+                  const matchesFarm = itemFilters.farm === '' || item.farm_id === itemFilters.farm;
+                  const matchesCategory = itemFilters.category === '' || item.category === itemFilters.category;
+                  const lowStock = isLowStock(item);
+                  const matchesLowStock = !itemFilters.lowStock || lowStock;
+                  return matchesSearch && matchesFarm && matchesCategory && matchesLowStock;
+                }).map((item) => {
                   const farm = farms.find((f) => f.id === item.farm_id);
                   const lowStock = isLowStock(item);
                   return (
@@ -332,6 +400,56 @@ export default function Inventory() {
       {/* Movements Tab */}
       {activeTab === 'movements' && (
         <div className="space-y-6">
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search by item name..."
+                  value={movementFilters.search}
+                  onChange={(e) => setMovementFilters({ ...movementFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={movementFilters.farm}
+                onChange={(e) => setMovementFilters({ ...movementFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+              <select
+                value={movementFilters.movementType}
+                onChange={(e) => setMovementFilters({ ...movementFilters, movementType: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Types</option>
+                <option value="In">In</option>
+                <option value="Out">Out</option>
+                <option value="Transfer">Transfer</option>
+              </select>
+              <input
+                type="date"
+                value={movementFilters.dateFrom}
+                onChange={(e) => setMovementFilters({ ...movementFilters, dateFrom: e.target.value })}
+                placeholder="From Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <input
+                type="date"
+                value={movementFilters.dateTo}
+                onChange={(e) => setMovementFilters({ ...movementFilters, dateTo: e.target.value })}
+                placeholder="To Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <button
               onClick={() => {
@@ -357,7 +475,16 @@ export default function Inventory() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {movements.map((movement) => {
+                {movements.filter((movement) => {
+                  const item = items.find((i) => i.id === movement.inventory_id);
+                  const matchesSearch = movementFilters.search === '' || 
+                    item?.name.toLowerCase().includes(movementFilters.search.toLowerCase());
+                  const matchesFarm = movementFilters.farm === '' || movement.farm_id === movementFilters.farm;
+                  const matchesType = movementFilters.movementType === '' || movement.movement_type === movementFilters.movementType;
+                  const matchesDateFrom = movementFilters.dateFrom === '' || new Date(movement.date) >= new Date(movementFilters.dateFrom);
+                  const matchesDateTo = movementFilters.dateTo === '' || new Date(movement.date) <= new Date(movementFilters.dateTo);
+                  return matchesSearch && matchesFarm && matchesType && matchesDateFrom && matchesDateTo;
+                }).map((movement) => {
                   const item = items.find((i) => i.id === movement.inventory_id);
                   const fromFarm = farms.find((f) => f.id === movement.farm_id);
                   const toFarm = movement.to_farm_id ? farms.find((f) => f.id === movement.to_farm_id) : null;
