@@ -87,24 +87,46 @@ export default function Cattle() {
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Cattle.tsx:88',message:'uploadImage entry',data:{fileName:file.name,fileSize:file.size,fileType:file.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       setUploadingImage(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `cattle/${fileName}`;
 
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Cattle.tsx:95',message:'uploadImage before upload',data:{filePath,bucketName:'cattle-images'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       const { error: uploadError } = await supabase.storage
         .from('cattle-images')
         .upload(filePath, file);
 
+      // #region agent log
+      if (uploadError) fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Cattle.tsx:99',message:'uploadImage error before throw',data:{errorCode:uploadError.error,errorMessage:uploadError.message,errorStatus:uploadError.statusCode,fullError:JSON.stringify(uploadError)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
         .from('cattle-images')
         .getPublicUrl(filePath);
 
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Cattle.tsx:105',message:'uploadImage success',data:{publicUrl:data.publicUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       return data.publicUrl;
-    } catch (error) {
+    } catch (error: any) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Cattle.tsx:107',message:'uploadImage catch block',data:{errorType:error?.constructor?.name,errorCode:error?.error,errorMessage:error?.message,errorStatus:error?.statusCode,fullError:JSON.stringify(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       console.error('Error uploading image:', error);
+      // Gracefully handle missing bucket
+      if (error?.message?.includes('Bucket not found') || error?.error === 'Bucket not found' || error?.statusCode === 400) {
+        const errorMsg = 'Storage bucket "cattle-images" does not exist. Please create it in Supabase Dashboard > Storage, then run setup_cattle_images_storage.sql for policies.';
+        console.warn(errorMsg);
+        alert(errorMsg);
+        return null; // Return null instead of throwing to allow form submission without image
+      }
       throw error;
     } finally {
       setUploadingImage(false);

@@ -186,28 +186,78 @@ export default function Poultry() {
 
   const fetchEggSales = async () => {
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Poultry.tsx:187',message:'fetchEggSales entry',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       const { data, error } = await supabase
         .from('egg_sales')
         .select('*')
         .order('date', { ascending: false });
 
+      // #region agent log
+      if (error) fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Poultry.tsx:194',message:'fetchEggSales error before throw',data:{errorCode:error.code,errorMessage:error.message,errorDetails:error.details,errorHint:error.hint},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       if (error) throw error;
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Poultry.tsx:195',message:'fetchEggSales success',data:{dataCount:data?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       setEggSales(data || []);
-    } catch (error) {
+    } catch (error: any) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Poultry.tsx:197',message:'fetchEggSales catch block',data:{errorType:error?.constructor?.name,errorCode:error?.code,errorMessage:error?.message,errorDetails:error?.details,errorHint:error?.hint,fullError:JSON.stringify(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       console.error('Error fetching egg sales:', error);
+      // Gracefully handle missing table - set empty array to prevent app breakage
+      // Check for various error indicators: 404 status, PGRST116 code, or "does not exist" messages
+      const isTableNotFound = 
+        error?.code === 'PGRST116' || 
+        error?.message?.toLowerCase().includes('relation') || 
+        error?.message?.toLowerCase().includes('does not exist') ||
+        error?.message?.toLowerCase().includes('not found') ||
+        (error?.status === 404 || error?.statusCode === 404);
+      
+      if (isTableNotFound) {
+        console.warn('egg_sales table does not exist. Please run create_egg_sales_and_stock_tables.sql in your Supabase SQL editor. See SETUP_MISSING_TABLES.md for instructions.');
+        setEggSales([]);
+      }
     }
   };
 
   const fetchEggStockInitial = async () => {
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Poultry.tsx:201',message:'fetchEggStockInitial entry',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       const { data, error } = await supabase
         .from('egg_stock_initial')
         .select('*');
 
+      // #region agent log
+      if (error) fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Poultry.tsx:207',message:'fetchEggStockInitial error before throw',data:{errorCode:error.code,errorMessage:error.message,errorDetails:error.details,errorHint:error.hint},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       if (error) throw error;
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Poultry.tsx:208',message:'fetchEggStockInitial success',data:{dataCount:data?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       setEggStockInitial(data || []);
-    } catch (error) {
+    } catch (error: any) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Poultry.tsx:210',message:'fetchEggStockInitial catch block',data:{errorType:error?.constructor?.name,errorCode:error?.code,errorMessage:error?.message,errorDetails:error?.details,errorHint:error?.hint,fullError:JSON.stringify(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       console.error('Error fetching initial stock:', error);
+      // Gracefully handle missing table - set empty array to prevent app breakage
+      // Check for various error indicators: 404 status, PGRST116 code, or "does not exist" messages
+      const isTableNotFound = 
+        error?.code === 'PGRST116' || 
+        error?.message?.toLowerCase().includes('relation') || 
+        error?.message?.toLowerCase().includes('does not exist') ||
+        error?.message?.toLowerCase().includes('not found') ||
+        (error?.status === 404 || error?.statusCode === 404);
+      
+      if (isTableNotFound) {
+        console.warn('egg_stock_initial table does not exist. Please run create_egg_sales_and_stock_tables.sql in your Supabase SQL editor. See SETUP_MISSING_TABLES.md for instructions.');
+        setEggStockInitial([]);
+      }
     }
   };
 
