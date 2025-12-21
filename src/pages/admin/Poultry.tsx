@@ -43,7 +43,8 @@ export default function Poultry() {
     farm_id: '',
     date: new Date(),
     number_of_eggs: '',
-    egg_status: 'Good' as EggStatus,
+    broken_count: '',
+    spoiled_count: '',
     trays: '',
     staff_id: '',
     notes: '',
@@ -253,8 +254,8 @@ export default function Poultry() {
       }
       const stats = farmMap.get(collection.farm_id)!;
       stats.total += collection.number_of_eggs;
-      if (collection.egg_status === 'Broken') stats.broken += collection.number_of_eggs;
-      if (collection.egg_status === 'Spoiled') stats.spoiled += collection.number_of_eggs;
+      stats.broken += collection.broken_count || 0;
+      stats.spoiled += collection.spoiled_count || 0;
     });
 
     eggSales.forEach(sale => {
@@ -391,15 +392,50 @@ export default function Poultry() {
     if (!user) return;
 
     try {
-      const eggs = parseInt(eggFormData.number_of_eggs);
-      const fullTrays = Math.floor(eggs / 30);
-      const remainingEggs = eggs % 30;
+      const totalEggs = parseInt(eggFormData.number_of_eggs) || 0;
+      const brokenCount = parseInt(eggFormData.broken_count) || 0;
+      const spoiledCount = parseInt(eggFormData.spoiled_count) || 0;
+      const goodEggs = totalEggs - brokenCount - spoiledCount;
+
+      // Validation
+      if (totalEggs <= 0) {
+        alert('Total number of eggs must be greater than 0');
+        return;
+      }
+
+      if (brokenCount < 0 || spoiledCount < 0) {
+        alert('Broken and spoiled counts cannot be negative');
+        return;
+      }
+
+      if (brokenCount + spoiledCount > totalEggs) {
+        alert('Broken eggs + Spoiled eggs cannot exceed total eggs collected');
+        return;
+      }
+
+      if (goodEggs < 0) {
+        alert('Good eggs count cannot be negative. Please check your broken and spoiled counts.');
+        return;
+      }
+
+      const fullTrays = Math.floor(totalEggs / 30);
+      const remainingEggs = totalEggs % 30;
+      
+      // Determine egg_status for backward compatibility (use the majority)
+      let eggStatus: EggStatus = 'Good';
+      if (brokenCount > spoiledCount && brokenCount > goodEggs) {
+        eggStatus = 'Broken';
+      } else if (spoiledCount > goodEggs) {
+        eggStatus = 'Spoiled';
+      }
       
       const eggData = {
         farm_id: eggFormData.farm_id,
         date: eggFormData.date.toISOString().split('T')[0],
-        number_of_eggs: eggs,
-        egg_status: eggFormData.egg_status,
+        number_of_eggs: totalEggs,
+        egg_status: eggStatus, // For backward compatibility
+        broken_count: brokenCount,
+        spoiled_count: spoiledCount,
         trays: fullTrays + (remainingEggs > 0 ? 1 : 0), // Total trays needed
         staff_id: eggFormData.staff_id,
         notes: eggFormData.notes || null,
@@ -429,7 +465,8 @@ export default function Poultry() {
         farm_id: '',
         date: new Date(),
         number_of_eggs: '',
-        egg_status: 'Good',
+        broken_count: '',
+        spoiled_count: '',
         trays: '',
         staff_id: '',
         notes: '',
@@ -713,42 +750,42 @@ export default function Poultry() {
             {/* Custom Date Range */}
             {eggFilters.dateFilter === 'custom' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={eggFilters.search}
-                  onChange={(e) => setEggFilters({ ...eggFilters, search: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-              <select
-                value={eggFilters.farm}
-                onChange={(e) => setEggFilters({ ...eggFilters, farm: e.target.value })}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">All Farms</option>
-                {farms.filter(f => f.type === 'Layer').map((farm) => (
-                  <option key={farm.id} value={farm.id}>{farm.name}</option>
-                ))}
-              </select>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={eggFilters.search}
+                    onChange={(e) => setEggFilters({ ...eggFilters, search: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <select
+                  value={eggFilters.farm}
+                  onChange={(e) => setEggFilters({ ...eggFilters, farm: e.target.value })}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="">All Farms</option>
+                  {farms.filter(f => f.type === 'Layer').map((farm) => (
+                    <option key={farm.id} value={farm.id}>{farm.name}</option>
+                  ))}
+                </select>
                 <div className="grid grid-cols-2 gap-2">
-              <input
-                type="date"
-                value={eggFilters.dateFrom}
-                onChange={(e) => setEggFilters({ ...eggFilters, dateFrom: e.target.value })}
-                placeholder="From Date"
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              <input
-                type="date"
-                value={eggFilters.dateTo}
-                onChange={(e) => setEggFilters({ ...eggFilters, dateTo: e.target.value })}
-                placeholder="To Date"
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
+                  <input
+                    type="date"
+                    value={eggFilters.dateFrom}
+                    onChange={(e) => setEggFilters({ ...eggFilters, dateFrom: e.target.value })}
+                    placeholder="From Date"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <input
+                    type="date"
+                    value={eggFilters.dateTo}
+                    onChange={(e) => setEggFilters({ ...eggFilters, dateTo: e.target.value })}
+                    placeholder="To Date"
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
               </div>
             )}
             
@@ -787,7 +824,8 @@ export default function Poultry() {
                   farm_id: '',
                   date: new Date(),
                   number_of_eggs: '',
-                  egg_status: 'Good',
+                  broken_count: '',
+                  spoiled_count: '',
                   trays: '',
                   staff_id: '',
                   notes: '',
@@ -820,35 +858,45 @@ export default function Poultry() {
                 columns={[
                   { key: 'date', label: 'Date' },
                   { key: 'farm_id', label: 'Farm' },
-                  { key: 'number_of_eggs', label: 'Eggs' },
-                  { key: 'egg_status', label: 'Status' },
+                  { key: 'number_of_eggs', label: 'Total Eggs' },
+                  { key: 'good_eggs', label: 'Good' },
+                  { key: 'broken_eggs', label: 'Broken' },
+                  { key: 'spoiled_eggs', label: 'Spoiled' },
                   { key: 'trays', label: 'Trays' },
                   { key: 'staff_id', label: 'Staff' },
                 ]}
                 getRowData={(collection) => {
                   const farm = farms.find((f) => f.id === collection.farm_id);
                   const staffMember = staff.find((s) => s.id === collection.staff_id);
+                  const broken = collection.broken_count || 0;
+                  const spoiled = collection.spoiled_count || 0;
+                  const good = collection.number_of_eggs - broken - spoiled;
                   return {
                     date: collection.date,
                     'farm_id': farm?.name || 'N/A',
                     'number_of_eggs': collection.number_of_eggs,
-                    'egg_status': collection.egg_status || 'Good',
+                    'good_eggs': good,
+                    'broken_eggs': broken,
+                    'spoiled_eggs': spoiled,
                     'trays': collection.number_of_eggs ? calculateTrays(collection.number_of_eggs) : 'N/A',
                     'staff_id': staffMember?.name || 'N/A',
                   };
                 }}
               />
             </div>
+            <div className="overflow-x-auto">
             <table id="egg-collections-table" className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Farm</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Eggs</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trays</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Staff</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Date</th>
+                  <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Farm</th>
+                  <th className="px-3 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Total Eggs</th>
+                  <th className="px-3 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Good</th>
+                  <th className="px-3 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Broken</th>
+                  <th className="px-3 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Spoiled</th>
+                  <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Trays</th>
+                  <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Staff</th>
+                  <th className="px-3 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -868,29 +916,33 @@ export default function Poultry() {
 
                   return (
                     <tr key={collection.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm">
                         {new Date(collection.date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{farm?.name || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm">{farm?.name || 'N/A'}</td>
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right font-semibold">
                         {collection.number_of_eggs}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          collection.egg_status === 'Good' ? 'bg-green-100 text-green-800' :
-                          collection.egg_status === 'Broken' ? 'bg-red-100 text-red-800' :
-                          'bg-orange-100 text-orange-800'
-                        }`}>
-                          {collection.egg_status || 'Good'}
-                        </span>
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right text-green-600 font-medium">
+                        {(() => {
+                          const broken = collection.broken_count || 0;
+                          const spoiled = collection.spoiled_count || 0;
+                          return collection.number_of_eggs - broken - spoiled;
+                        })()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right text-red-600">
+                        {collection.broken_count || 0}
+                      </td>
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right text-orange-600">
+                        {collection.spoiled_count || 0}
+                      </td>
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">
                         {collection.number_of_eggs ? calculateTrays(collection.number_of_eggs) : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">
                         {staffMember?.name || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-right">
                         {canEdit ? (
                           <div className="flex justify-end gap-2">
                             <button
@@ -900,7 +952,8 @@ export default function Poultry() {
                                   farm_id: collection.farm_id,
                                   date: new Date(collection.date),
                                   number_of_eggs: collection.number_of_eggs.toString(),
-                                  egg_status: collection.egg_status || 'Good',
+                                  broken_count: (collection.broken_count || 0).toString(),
+                                  spoiled_count: (collection.spoiled_count || 0).toString(),
                                   trays: collection.trays?.toString() || '',
                                   staff_id: collection.staff_id,
                                   notes: collection.notes || '',
@@ -922,6 +975,7 @@ export default function Poultry() {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
 
@@ -1428,26 +1482,26 @@ export default function Poultry() {
             </h2>
             <form onSubmit={handleEggSubmit} className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
-              <div>
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Farm *</label>
-                <select
-                  value={eggFormData.farm_id}
-                  onChange={(e) => setEggFormData({ ...eggFormData, farm_id: e.target.value })}
-                  required
+                  <select
+                    value={eggFormData.farm_id}
+                    onChange={(e) => setEggFormData({ ...eggFormData, farm_id: e.target.value })}
+                    required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Select Farm</option>
-                  {farms.filter((f) => f.type === 'Layer').map((farm) => (
-                    <option key={farm.id} value={farm.id}>{farm.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
+                  >
+                    <option value="">Select Farm</option>
+                    {farms.filter((f) => f.type === 'Layer').map((farm) => (
+                      <option key={farm.id} value={farm.id}>{farm.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Date *</label>
-                <DatePicker
-                  selected={eggFormData.date}
-                  onChange={(date: Date) => setEggFormData({ ...eggFormData, date })}
-                  dateFormat="yyyy-MM-dd"
+                  <DatePicker
+                    selected={eggFormData.date}
+                    onChange={(date: Date) => setEggFormData({ ...eggFormData, date })}
+                    dateFormat="yyyy-MM-dd"
                     showYearDropdown
                     showMonthDropdown
                     dropdownMode="select"
@@ -1455,13 +1509,14 @@ export default function Poultry() {
                     yearDropdownItemNumber={100}
                     maxDate={new Date()}
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Number of Eggs *</label>
-                <input
-                  type="number"
-                  value={eggFormData.number_of_eggs}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Total Eggs Collected *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={eggFormData.number_of_eggs}
                     onChange={(e) => {
                       const eggs = e.target.value;
                       setEggFormData({ 
@@ -1470,44 +1525,88 @@ export default function Poultry() {
                         trays: eggs ? Math.ceil(parseInt(eggs) / 30).toString() : ''
                       });
                     }}
-                  required
-                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Egg Status *</label>
-                  <select
-                    value={eggFormData.egg_status}
-                    onChange={(e) => setEggFormData({ ...eggFormData, egg_status: e.target.value as EggStatus })}
                     required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="Good">Good</option>
-                    <option value="Broken">Broken</option>
-                    <option value="Spoiled">Spoiled</option>
-                  </select>
+                    placeholder="e.g., 200"
+                  />
+                </div>
               </div>
-              <div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Broken Eggs</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={eggFormData.broken_count}
+                    onChange={(e) => {
+                      const broken = e.target.value;
+                      const total = parseInt(eggFormData.number_of_eggs) || 0;
+                      const spoiled = parseInt(eggFormData.spoiled_count) || 0;
+                      if (broken && (parseInt(broken) + spoiled > total)) {
+                        alert(`Broken eggs (${broken}) + Spoiled eggs (${spoiled}) cannot exceed total eggs (${total})`);
+                        return;
+                      }
+                      setEggFormData({ ...eggFormData, broken_count: broken });
+                    }}
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="e.g., 5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Spoiled Eggs</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={eggFormData.spoiled_count}
+                    onChange={(e) => {
+                      const spoiled = e.target.value;
+                      const total = parseInt(eggFormData.number_of_eggs) || 0;
+                      const broken = parseInt(eggFormData.broken_count) || 0;
+                      if (spoiled && (broken + parseInt(spoiled) > total)) {
+                        alert(`Broken eggs (${broken}) + Spoiled eggs (${spoiled}) cannot exceed total eggs (${total})`);
+                        return;
+                      }
+                      setEggFormData({ ...eggFormData, spoiled_count: spoiled });
+                    }}
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
+                    placeholder="e.g., 10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Good Eggs (Auto-calculated)</label>
+                  <div className="w-full px-3 py-1.5 text-sm bg-green-50 border border-green-200 rounded-lg text-green-700 font-medium">
+                    {(() => {
+                      const total = parseInt(eggFormData.number_of_eggs) || 0;
+                      const broken = parseInt(eggFormData.broken_count) || 0;
+                      const spoiled = parseInt(eggFormData.spoiled_count) || 0;
+                      const good = total - broken - spoiled;
+                      return good >= 0 ? good : 0;
+                    })()}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Trays (Auto-calculated)</label>
                   <div className="w-full px-3 py-1.5 text-sm bg-gray-50 border rounded-lg text-gray-700">
                     {eggFormData.number_of_eggs 
                       ? calculateTrays(parseInt(eggFormData.number_of_eggs))
-                      : 'Enter number of eggs'}
+                      : 'Enter total eggs'}
                   </div>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Staff *</label>
-                <select
-                  value={eggFormData.staff_id}
-                  onChange={(e) => setEggFormData({ ...eggFormData, staff_id: e.target.value })}
-                  required
+                  <select
+                    value={eggFormData.staff_id}
+                    onChange={(e) => setEggFormData({ ...eggFormData, staff_id: e.target.value })}
+                    required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Select Staff</option>
-                  {staff.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                  >
+                    <option value="">Select Staff</option>
+                    {staff.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>
@@ -1548,49 +1647,51 @@ export default function Poultry() {
             </h2>
             <form onSubmit={handleBroilerSubmit} className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
-              <div>
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Farm *</label>
-                <select
-                  value={broilerFormData.farm_id}
-                  onChange={(e) => setBroilerFormData({ ...broilerFormData, farm_id: e.target.value })}
-                  required
+                  <select
+                    value={broilerFormData.farm_id}
+                    onChange={(e) => setBroilerFormData({ ...broilerFormData, farm_id: e.target.value })}
+                    required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Select Farm</option>
-                  {farms.filter((f) => f.type === 'Broiler').map((farm) => (
-                    <option key={farm.id} value={farm.id}>{farm.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
+                  >
+                    <option value="">Select Farm</option>
+                    {farms.filter((f) => f.type === 'Broiler').map((farm) => (
+                      <option key={farm.id} value={farm.id}>{farm.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Batch Number *</label>
-                <input
-                  type="text"
-                  value={broilerFormData.batch_number}
-                  onChange={(e) => setBroilerFormData({ ...broilerFormData, batch_number: e.target.value })}
-                  required
+                  <input
+                    type="text"
+                    value={broilerFormData.batch_number}
+                    onChange={(e) => setBroilerFormData({ ...broilerFormData, batch_number: e.target.value })}
+                    required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Start Date *</label>
-                <DatePicker
-                  selected={broilerFormData.start_date}
-                  onChange={(date: Date) => setBroilerFormData({ ...broilerFormData, start_date: date })}
-                  dateFormat="yyyy-MM-dd"
+                  <DatePicker
+                    selected={broilerFormData.start_date}
+                    onChange={(date: Date) => setBroilerFormData({ ...broilerFormData, start_date: date })}
+                    dateFormat="yyyy-MM-dd"
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                />
+                  />
+                </div>
               </div>
-              <div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Initial Count *</label>
-                <input
-                  type="number"
-                  value={broilerFormData.initial_count}
-                  onChange={(e) => setBroilerFormData({ ...broilerFormData, initial_count: e.target.value })}
-                  required
+                  <input
+                    type="number"
+                    value={broilerFormData.initial_count}
+                    onChange={(e) => setBroilerFormData({ ...broilerFormData, initial_count: e.target.value })}
+                    required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>

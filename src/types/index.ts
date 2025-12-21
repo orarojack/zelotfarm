@@ -94,8 +94,10 @@ export interface EggCollection {
   id: string;
   farm_id: string;
   date: string;
-  number_of_eggs: number;
-  egg_status: EggStatus;
+  number_of_eggs: number; // Total eggs collected
+  egg_status: EggStatus; // Legacy field, kept for backward compatibility
+  broken_count?: number; // Number of broken eggs
+  spoiled_count?: number; // Number of spoiled eggs
   trays?: number;
   staff_id: string;
   notes?: string;
