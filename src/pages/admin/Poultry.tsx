@@ -590,50 +590,52 @@ export default function Poultry() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Poultry Management</h1>
+    <div className="space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Poultry Management</h1>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b border-gray-200 overflow-x-auto">
+        <nav className="-mb-px flex space-x-4 lg:space-x-8 min-w-max lg:min-w-0">
           <button
             onClick={() => setActiveTab('layers')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 lg:py-4 px-1 border-b-2 font-medium text-xs lg:text-sm whitespace-nowrap ${
               activeTab === 'layers'
                 ? 'border-green-500 text-green-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <Egg size={20} />
-              Layers (Egg Collection)
+            <div className="flex items-center gap-1.5 lg:gap-2">
+              <Egg size={16} className="lg:w-5 lg:h-5" />
+              <span className="hidden sm:inline">Layers (Egg Collection)</span>
+              <span className="sm:hidden">Layers</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('analysis')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 lg:py-4 px-1 border-b-2 font-medium text-xs lg:text-sm whitespace-nowrap ${
               activeTab === 'analysis'
                 ? 'border-green-500 text-green-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <BarChart3 size={20} />
-              Layers Analysis
+            <div className="flex items-center gap-1.5 lg:gap-2">
+              <BarChart3 size={16} className="lg:w-5 lg:h-5" />
+              <span className="hidden sm:inline">Layers Analysis</span>
+              <span className="sm:hidden">Analysis</span>
             </div>
           </button>
           <button
             onClick={() => setActiveTab('broilers')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 lg:py-4 px-1 border-b-2 font-medium text-xs lg:text-sm whitespace-nowrap ${
               activeTab === 'broilers'
                 ? 'border-green-500 text-green-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <Circle size={20} />
+            <div className="flex items-center gap-1.5 lg:gap-2">
+              <Circle size={16} className="lg:w-5 lg:h-5" />
               Broilers
             </div>
           </button>
@@ -927,15 +929,15 @@ export default function Poultry() {
       {activeTab === 'analysis' && (
         <div className="space-y-6">
           {/* Header with Actions */}
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-900">Layers Stock Analysis</h2>
-            <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 className="text-xl lg:text-2xl font-bold text-gray-900">Layers Stock Analysis</h2>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => setShowInitialStockModal(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-blue-700 text-sm"
               >
-                <Settings size={20} />
-                Set Initial Stock
+                <Settings size={18} className="lg:w-5 lg:h-5" />
+                <span>Set Initial Stock</span>
               </button>
               <button
                 onClick={() => {
@@ -950,10 +952,10 @@ export default function Poultry() {
                   });
                   setShowSaleModal(true);
                 }}
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                className="flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-green-700 text-sm"
               >
-                <DollarSign size={20} />
-                Add Sale
+                <DollarSign size={18} className="lg:w-5 lg:h-5" />
+                <span>Add Sale</span>
               </button>
             </div>
           </div>
@@ -996,19 +998,20 @@ export default function Poultry() {
                 ]}
               />
             </div>
-            <table id="stock-analysis-table" className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Opening Stock</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Daily Collection</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Broken</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Spoiled</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Sold</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Balance</th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto">
+              <table id="stock-analysis-table" className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Date</th>
+                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Opening Stock</th>
+                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Daily Collection</th>
+                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Total</th>
+                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Broken</th>
+                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Spoiled</th>
+                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Sold</th>
+                    <th className="px-3 lg:px-6 py-2 lg:py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Balance</th>
+                  </tr>
+                </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {stockAnalysis.length === 0 ? (
                   <tr>
@@ -1021,28 +1024,28 @@ export default function Poultry() {
                 ) : (
                   stockAnalysis.map((row, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm">
                         {new Date(row.date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right font-medium">
                         {row.opening_stock.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right text-green-600 font-medium">
                         +{row.daily_collection.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right font-semibold">
                         {row.total.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right text-red-600">
                         -{row.broken.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-orange-600">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right text-orange-600">
                         -{row.spoiled.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-blue-600">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right text-blue-600">
                         -{row.sold.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-700">
+                      <td className="px-3 lg:px-6 py-3 lg:py-4 whitespace-nowrap text-xs lg:text-sm text-right font-bold text-green-700">
                         {row.balance.toLocaleString()}
                       </td>
                     </tr>
@@ -1050,6 +1053,7 @@ export default function Poultry() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Initial Stock Modal */}
@@ -1132,8 +1136,8 @@ export default function Poultry() {
 
           {/* Sale Modal */}
           {showSaleModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg p-5 w-full max-w-md">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+              <div className="bg-white rounded-lg p-4 sm:p-5 w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-4">
                   {editingSale ? 'Edit Egg Sale' : 'Add Egg Sale'}
                 </h2>

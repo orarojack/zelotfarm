@@ -104,13 +104,14 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile sidebar toggle */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-40 p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-green-700">Zealot AgriWorks</h1>
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-40 p-3 flex items-center justify-between shadow-sm">
+        <h1 className="text-lg font-bold text-green-700 truncate">Zealot AgriWorks</h1>
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
+          className="p-2 rounded-md text-gray-600 hover:bg-gray-100 flex-shrink-0"
+          aria-label="Toggle menu"
         >
-          {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
@@ -120,7 +121,7 @@ export default function AdminLayout() {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 ${
           sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
-        } w-64`}
+        } w-64 lg:pt-0 pt-14`}
         onMouseEnter={() => {
           if (window.innerWidth >= 1024 && sidebarCollapsed && tabClicked) {
             setSidebarCollapsed(false);
@@ -134,7 +135,7 @@ export default function AdminLayout() {
       >
         <div className="h-full flex flex-col">
           {/* Logo */}
-          <div className={`p-6 border-b border-gray-200 ${sidebarCollapsed ? 'lg:p-4 lg:flex lg:justify-center' : ''}`}>
+          <div className={`p-4 lg:p-6 border-b border-gray-200 ${sidebarCollapsed ? 'lg:p-4 lg:flex lg:justify-center' : ''}`}>
             <div className="relative">
               <img 
                 src="/agriworkslogo.jpeg" 
@@ -162,8 +163,8 @@ export default function AdminLayout() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4">
-            <ul className="space-y-2">
+          <nav className="flex-1 overflow-y-auto p-3 lg:p-4">
+            <ul className="space-y-1 lg:space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path || 
@@ -173,7 +174,7 @@ export default function AdminLayout() {
                   <li key={item.path}>
                     <Link
                       to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                      className={`flex items-center gap-2 lg:gap-3 px-3 py-2.5 lg:px-4 lg:py-3 rounded-lg transition-colors text-sm lg:text-base ${
                         sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''
                       } ${
                         isActive
@@ -192,8 +193,8 @@ export default function AdminLayout() {
                       }}
                       title={sidebarCollapsed ? item.label : ''}
                     >
-                      <Icon size={20} className="flex-shrink-0" />
-                      <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
+                      <Icon size={18} className="flex-shrink-0 lg:w-5 lg:h-5" />
+                      <span className={`${sidebarCollapsed ? 'lg:hidden' : ''} truncate`}>{item.label}</span>
                     </Link>
                   </li>
                 );
@@ -202,11 +203,11 @@ export default function AdminLayout() {
           </nav>
 
           {/* User info and logout */}
-          <div className={`p-4 border-t border-gray-200 ${sidebarCollapsed ? 'lg:p-2' : ''}`}>
+          <div className={`p-3 lg:p-4 border-t border-gray-200 ${sidebarCollapsed ? 'lg:p-2' : ''}`}>
             {!sidebarCollapsed && (
-              <div className="mb-3">
-                <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-                <p className="text-xs text-gray-500">{user?.role}</p>
+              <div className="mb-2 lg:mb-3">
+                <p className="text-xs lg:text-sm font-medium text-gray-900 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 truncate">{user?.role}</p>
               </div>
             )}
             <button
@@ -245,7 +246,7 @@ export default function AdminLayout() {
       <div className={`flex-1 min-w-0 transition-all duration-300 ${
         sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
       }`}>
-        <main className="w-full max-w-full overflow-x-hidden p-4 lg:p-8">
+        <main className="w-full max-w-full overflow-x-hidden p-3 lg:p-4 xl:p-8 pt-16 lg:pt-4">
           <Outlet />
         </main>
       </div>

@@ -39,30 +39,30 @@ export default function TableActions({
 
   return (
     <>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+          className="flex items-center gap-1.5 lg:gap-2 px-3 py-1.5 lg:px-4 lg:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs lg:text-sm font-medium"
           title="Export to CSV"
         >
-          <Download size={18} />
-          Export
+          <Download size={16} className="lg:w-[18px] lg:h-[18px]" />
+          <span className="hidden sm:inline">Export</span>
         </button>
         <button
           onClick={handlePrintPDF}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="flex items-center gap-1.5 lg:gap-2 px-3 py-1.5 lg:px-4 lg:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs lg:text-sm font-medium"
           title="Print as PDF"
         >
-          <Printer size={18} />
-          Print
+          <Printer size={16} className="lg:w-[18px] lg:h-[18px]" />
+          <span className="hidden sm:inline">Print</span>
         </button>
         <button
           onClick={handleAnalysis}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+          className="flex items-center gap-1.5 lg:gap-2 px-3 py-1.5 lg:px-4 lg:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs lg:text-sm font-medium"
           title="View Analysis"
         >
-          <BarChart3 size={18} />
-          Analysis
+          <BarChart3 size={16} className="lg:w-[18px] lg:h-[18px]" />
+          <span className="hidden sm:inline">Analysis</span>
         </button>
       </div>
 
