@@ -102,7 +102,7 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile sidebar toggle */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-40 p-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-green-700">Zealot AgriWorks</h1>
@@ -116,7 +116,7 @@ export default function AdminLayout() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-30 transition-all duration-300 ${
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-30 transition-all duration-300 flex-shrink-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 ${
           sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
@@ -242,8 +242,10 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main content */}
-      <div className={`lg:pl-64 transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : ''}`}>
-        <main className="p-4 lg:p-8">
+      <div className={`flex-1 min-w-0 transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+      }`}>
+        <main className="w-full max-w-full overflow-x-hidden p-4 lg:p-8">
           <Outlet />
         </main>
       </div>

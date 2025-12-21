@@ -711,42 +711,42 @@ export default function Poultry() {
             {/* Custom Date Range */}
             {eggFilters.dateFilter === 'custom' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={eggFilters.search}
-                    onChange={(e) => setEggFilters({ ...eggFilters, search: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-                <select
-                  value={eggFilters.farm}
-                  onChange={(e) => setEggFilters({ ...eggFilters, farm: e.target.value })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">All Farms</option>
-                  {farms.filter(f => f.type === 'Layer').map((farm) => (
-                    <option key={farm.id} value={farm.id}>{farm.name}</option>
-                  ))}
-                </select>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={eggFilters.search}
+                  onChange={(e) => setEggFilters({ ...eggFilters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+              <select
+                value={eggFilters.farm}
+                onChange={(e) => setEggFilters({ ...eggFilters, farm: e.target.value })}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Farms</option>
+                {farms.filter(f => f.type === 'Layer').map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
                 <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    value={eggFilters.dateFrom}
-                    onChange={(e) => setEggFilters({ ...eggFilters, dateFrom: e.target.value })}
-                    placeholder="From Date"
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  <input
-                    type="date"
-                    value={eggFilters.dateTo}
-                    onChange={(e) => setEggFilters({ ...eggFilters, dateTo: e.target.value })}
-                    placeholder="To Date"
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
+              <input
+                type="date"
+                value={eggFilters.dateFrom}
+                onChange={(e) => setEggFilters({ ...eggFilters, dateFrom: e.target.value })}
+                placeholder="From Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <input
+                type="date"
+                value={eggFilters.dateTo}
+                onChange={(e) => setEggFilters({ ...eggFilters, dateTo: e.target.value })}
+                placeholder="To Date"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
               </div>
             )}
             
@@ -1424,26 +1424,26 @@ export default function Poultry() {
             </h2>
             <form onSubmit={handleEggSubmit} className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
-                <div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Farm *</label>
-                  <select
-                    value={eggFormData.farm_id}
-                    onChange={(e) => setEggFormData({ ...eggFormData, farm_id: e.target.value })}
-                    required
+                <select
+                  value={eggFormData.farm_id}
+                  onChange={(e) => setEggFormData({ ...eggFormData, farm_id: e.target.value })}
+                  required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Select Farm</option>
-                    {farms.filter((f) => f.type === 'Layer').map((farm) => (
-                      <option key={farm.id} value={farm.id}>{farm.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
+                >
+                  <option value="">Select Farm</option>
+                  {farms.filter((f) => f.type === 'Layer').map((farm) => (
+                    <option key={farm.id} value={farm.id}>{farm.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Date *</label>
-                  <DatePicker
-                    selected={eggFormData.date}
-                    onChange={(date: Date) => setEggFormData({ ...eggFormData, date })}
-                    dateFormat="yyyy-MM-dd"
+                <DatePicker
+                  selected={eggFormData.date}
+                  onChange={(date: Date) => setEggFormData({ ...eggFormData, date })}
+                  dateFormat="yyyy-MM-dd"
                     showYearDropdown
                     showMonthDropdown
                     dropdownMode="select"
@@ -1451,13 +1451,13 @@ export default function Poultry() {
                     yearDropdownItemNumber={100}
                     maxDate={new Date()}
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
+                />
+              </div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Number of Eggs *</label>
-                  <input
-                    type="number"
-                    value={eggFormData.number_of_eggs}
+                <input
+                  type="number"
+                  value={eggFormData.number_of_eggs}
                     onChange={(e) => {
                       const eggs = e.target.value;
                       setEggFormData({ 
@@ -1466,11 +1466,11 @@ export default function Poultry() {
                         trays: eggs ? Math.ceil(parseInt(eggs) / 30).toString() : ''
                       });
                     }}
-                    required
+                  required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
+                />
+              </div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Egg Status *</label>
                   <select
                     value={eggFormData.egg_status}
@@ -1482,8 +1482,8 @@ export default function Poultry() {
                     <option value="Broken">Broken</option>
                     <option value="Spoiled">Spoiled</option>
                   </select>
-                </div>
-                <div>
+              </div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Trays (Auto-calculated)</label>
                   <div className="w-full px-3 py-1.5 text-sm bg-gray-50 border rounded-lg text-gray-700">
                     {eggFormData.number_of_eggs 
@@ -1493,17 +1493,17 @@ export default function Poultry() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Staff *</label>
-                  <select
-                    value={eggFormData.staff_id}
-                    onChange={(e) => setEggFormData({ ...eggFormData, staff_id: e.target.value })}
-                    required
+                <select
+                  value={eggFormData.staff_id}
+                  onChange={(e) => setEggFormData({ ...eggFormData, staff_id: e.target.value })}
+                  required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Select Staff</option>
-                    {staff.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
+                >
+                  <option value="">Select Staff</option>
+                  {staff.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
                 </div>
               </div>
               <div>
@@ -1544,49 +1544,49 @@ export default function Poultry() {
             </h2>
             <form onSubmit={handleBroilerSubmit} className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
-                <div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Farm *</label>
-                  <select
-                    value={broilerFormData.farm_id}
-                    onChange={(e) => setBroilerFormData({ ...broilerFormData, farm_id: e.target.value })}
-                    required
+                <select
+                  value={broilerFormData.farm_id}
+                  onChange={(e) => setBroilerFormData({ ...broilerFormData, farm_id: e.target.value })}
+                  required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Select Farm</option>
-                    {farms.filter((f) => f.type === 'Broiler').map((farm) => (
-                      <option key={farm.id} value={farm.id}>{farm.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
+                >
+                  <option value="">Select Farm</option>
+                  {farms.filter((f) => f.type === 'Broiler').map((farm) => (
+                    <option key={farm.id} value={farm.id}>{farm.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Batch Number *</label>
-                  <input
-                    type="text"
-                    value={broilerFormData.batch_number}
-                    onChange={(e) => setBroilerFormData({ ...broilerFormData, batch_number: e.target.value })}
-                    required
+                <input
+                  type="text"
+                  value={broilerFormData.batch_number}
+                  onChange={(e) => setBroilerFormData({ ...broilerFormData, batch_number: e.target.value })}
+                  required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
+                />
+              </div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Start Date *</label>
-                  <DatePicker
-                    selected={broilerFormData.start_date}
-                    onChange={(date: Date) => setBroilerFormData({ ...broilerFormData, start_date: date })}
-                    dateFormat="yyyy-MM-dd"
+                <DatePicker
+                  selected={broilerFormData.start_date}
+                  onChange={(date: Date) => setBroilerFormData({ ...broilerFormData, start_date: date })}
+                  dateFormat="yyyy-MM-dd"
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
+                />
+              </div>
+              <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Initial Count *</label>
-                  <input
-                    type="number"
-                    value={broilerFormData.initial_count}
-                    onChange={(e) => setBroilerFormData({ ...broilerFormData, initial_count: e.target.value })}
-                    required
+                <input
+                  type="number"
+                  value={broilerFormData.initial_count}
+                  onChange={(e) => setBroilerFormData({ ...broilerFormData, initial_count: e.target.value })}
+                  required
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
+                />
+              </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
