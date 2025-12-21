@@ -38,27 +38,47 @@ export default function Milking() {
     fetchFarms();
     fetchStaff();
     fetchMilkingRecords();
+    fetchAllCattle(); // Fetch all cattle for table display
   }, []);
 
-  useEffect(() => {
-    if (formData.farm_id) {
-      fetchCattleForFarm(formData.farm_id);
-    }
-  }, [formData.farm_id]);
+  // Removed useEffect for fetchCattleForFarm - we now fetch all cattle on mount
 
   const fetchFarms = async () => {
     const { data } = await supabase.from('farms').select('*').eq('type', 'Dairy');
     setFarms(data || []);
   };
 
+  const fetchAllCattle = async () => {
+    try {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Milking.tsx:fetchAllCattle',message:'fetchAllCattle entry',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      // Fetch all female cattle (Cow/Heifer) from all dairy farms for table display
+      const { data, error } = await supabase
+        .from('cattle')
+        .select('*')
+        .eq('gender', 'Female')
+        .in('status', ['Cow', 'Heifer']);
+      
+      // #region agent log
+      if (error) fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Milking.tsx:fetchAllCattle',message:'fetchAllCattle error',data:{error:JSON.stringify(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Milking.tsx:fetchAllCattle',message:'fetchAllCattle success',data:{cattleCount:data?.length||0,cattleIds:data?.map(c=>c.id)||[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
+      if (error) throw error;
+      setCattle(data || []);
+    } catch (error) {
+      console.error('Error fetching all cattle:', error);
+    }
+  };
+
   const fetchCattleForFarm = async (farmId: string) => {
-    const { data } = await supabase
-      .from('cattle')
-      .select('*')
-      .eq('farm_id', farmId)
-      .eq('gender', 'Female')
-      .in('status', ['Cow', 'Heifer']);
-    setCattle(data || []);
+    // This function is kept for backward compatibility but no longer needed
+    // since we now fetch all cattle on mount. The form will filter from the full array.
+    // We could remove this, but keeping it in case it's called elsewhere.
   };
 
   const fetchStaff = async () => {
@@ -68,6 +88,9 @@ export default function Milking() {
 
   const fetchMilkingRecords = async () => {
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Milking.tsx:fetchMilkingRecords',message:'fetchMilkingRecords entry',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       const { data, error } = await supabase
         .from('milking_records')
         .select('*')
@@ -75,7 +98,14 @@ export default function Milking() {
         .order('session', { ascending: true })
         .limit(100);
 
+      // #region agent log
+      if (error) fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Milking.tsx:fetchMilkingRecords',message:'fetchMilkingRecords error',data:{error:JSON.stringify(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       if (error) throw error;
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Milking.tsx:fetchMilkingRecords',message:'fetchMilkingRecords success',data:{recordsCount:data?.length||0,cowIds:data?.map(r=>r.cow_id).filter(Boolean)||[],uniqueCowIds:Array.from(new Set(data?.map(r=>r.cow_id).filter(Boolean)||[]))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       setRecords(data || []);
     } catch (error) {
       console.error('Error fetching milking records:', error);
@@ -148,7 +178,7 @@ export default function Milking() {
       staff_id: '',
       notes: '',
     });
-    setCattle([]);
+    // Don't clear cattle - we need it for the table display
   };
 
   const handleEdit = (record: MilkingRecord) => {
@@ -169,7 +199,7 @@ export default function Milking() {
       staff_id: record.staff_id,
       notes: record.notes || '',
     });
-    fetchCattleForFarm(record.farm_id);
+    // No need to fetch cattle - we already have all cattle loaded
     setShowModal(true);
   };
 
@@ -226,7 +256,7 @@ export default function Milking() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Search by cow tag..."
+              placeholder="Search by insurance..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -289,7 +319,7 @@ export default function Milking() {
             })}
             columns={[
               { key: 'date', label: 'Date' },
-              { key: 'cow_id', label: 'Cow Tag' },
+              { key: 'cow_id', label: 'Insurance' },
               { key: 'session', label: 'Session' },
               { key: 'milk_yield', label: 'Yield (L)' },
               { key: 'milk_status', label: 'Status' },
@@ -313,7 +343,7 @@ export default function Milking() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cow Tag</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Insurance</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Session</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Yield (L)</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -334,6 +364,13 @@ export default function Milking() {
               return matchesSearch && matchesFarm && matchesSession && matchesDateFrom && matchesDateTo;
             }).map((record) => {
               const cow = cattle.find((c) => c.id === record.cow_id);
+              // #region agent log
+              if (!cow && record.cow_id) {
+                fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Milking.tsx:tableRow',message:'cow not found in cattle array',data:{recordCowId:record.cow_id,recordId:record.id,cattleArrayLength:cattle.length,cattleIds:cattle.map(c=>c.id),cattleTagIds:cattle.map(c=>c.tag_id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+              } else if (cow) {
+                fetch('http://127.0.0.1:7244/ingest/3c3bc49c-291b-47aa-aa58-ddb9ba3590ef',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Milking.tsx:tableRow',message:'cow found in cattle array',data:{recordCowId:record.cow_id,cowTagId:cow.tag_id,cowId:cow.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+              }
+              // #endregion
               const staffMember = staff.find((s) => s.id === record.staff_id);
               const canEdit = canEditDelete(record);
 
@@ -426,7 +463,7 @@ export default function Milking() {
                     className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 disabled:bg-gray-100"
                   >
                     <option value="">Select Cow</option>
-                    {cattle.map((c) => (
+                    {cattle.filter((c) => c.farm_id === formData.farm_id).map((c) => (
                       <option key={c.id} value={c.id}>{c.tag_id}</option>
                     ))}
                   </select>
