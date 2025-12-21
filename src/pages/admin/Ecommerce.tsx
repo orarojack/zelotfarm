@@ -4,6 +4,7 @@ import { EcommerceProduct, LiveBid, ProductCategory, Farm, Order, OrderItem, Cus
 import { Plus, Edit, Trash2, ShoppingCart, Gavel, Tag, Eye, EyeOff, Package, DollarSign, CheckCircle, Clock, XCircle, Truck, Search } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import DatePicker from 'react-datepicker';
+import TableActions from '../../components/admin/TableActions';
 
 export default function Ecommerce() {
   const [activeTab, setActiveTab] = useState<'products' | 'bids' | 'categories' | 'orders' | 'revenue'>('products');
@@ -722,6 +723,7 @@ export default function Ecommerce() {
                 <option value="Dairy">Dairy</option>
                 <option value="Broiler">Broiler</option>
                 <option value="Layer">Layer</option>
+                <option value="Other">Other</option>
               </select>
               <select
                 value={productFilters.farmLocation}
@@ -899,6 +901,7 @@ export default function Ecommerce() {
                 <option value="Dairy">Dairy</option>
                 <option value="Broiler">Broiler</option>
                 <option value="Layer">Layer</option>
+                <option value="Other">Other</option>
               </select>
               <select
                 value={bidFilters.farmLocation}
@@ -1135,7 +1138,7 @@ export default function Ecommerce() {
       {/* Product Modal */}
       {showProductModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-5 w-full max-w-6xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingProduct ? 'Edit Product' : 'Add Product'}
             </h2>
@@ -1305,7 +1308,7 @@ export default function Ecommerce() {
       {/* Live Bid Modal */}
       {showBidModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-5 w-full max-w-6xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingBid ? 'Edit Live Bid' : 'Add Live Bid'}
             </h2>
@@ -1582,7 +1585,7 @@ export default function Ecommerce() {
           {/* Order Detail Modal */}
           {selectedOrder && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-white rounded-lg max-w-6xl w-full">
                 <div className="p-6 border-b">
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-gray-900">

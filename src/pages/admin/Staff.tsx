@@ -4,6 +4,7 @@ import { Staff as StaffType, CasualWage, Farm, StaffRole, PaymentMethod } from '
 import { Plus, Edit, Trash2, Users, DollarSign, Calendar, Key, Search } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import { useAuth } from '../../contexts/AuthContext';
+import TableActions from '../../components/admin/TableActions';
 
 export default function Staff() {
   const [activeTab, setActiveTab] = useState<'staff' | 'salaries' | 'wages'>('staff');
@@ -879,11 +880,11 @@ export default function Staff() {
       {/* Staff Modal */}
       {showStaffModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-5 w-full max-w-6xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingStaff ? 'Edit Staff Member' : 'Add Staff Member'}
             </h2>
-            <form onSubmit={handleStaffSubmit} className="space-y-4">
+            <form onSubmit={handleStaffSubmit} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                 <input

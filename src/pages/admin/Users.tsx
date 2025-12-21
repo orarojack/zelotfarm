@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { User, StaffRole, Staff as StaffType } from '../../types';
 import { Plus, Edit, Trash2, Users as UsersIcon, Mail, Shield, Key, Search, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import TableActions from '../../components/admin/TableActions';
 
 export default function Users() {
   const { user: currentUser, supabaseUser } = useAuth();
@@ -477,11 +478,11 @@ export default function Users() {
       {/* User Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-5 w-full max-w-5xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingUser ? 'Edit User' : 'Add New User'}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                 <input

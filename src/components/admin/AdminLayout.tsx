@@ -49,6 +49,8 @@ const allMenuItems: MenuItem[] = [
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [tabClicked, setTabClicked] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -114,18 +116,30 @@ export default function AdminLayout() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-30 transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-30 transition-all duration-300 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 w-64`}
+        } lg:translate-x-0 ${
+          sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
+        } w-64`}
+        onMouseEnter={() => {
+          if (window.innerWidth >= 1024 && sidebarCollapsed && tabClicked) {
+            setSidebarCollapsed(false);
+          }
+        }}
+        onMouseLeave={() => {
+          if (window.innerWidth >= 1024 && tabClicked) {
+            setSidebarCollapsed(true);
+          }
+        }}
       >
         <div className="h-full flex flex-col">
           {/* Logo */}
-          <div className="p-6 border-b border-gray-200">
+          <div className={`p-6 border-b border-gray-200 ${sidebarCollapsed ? 'lg:p-4 lg:flex lg:justify-center' : ''}`}>
             <div className="relative">
               <img 
                 src="/agriworkslogo.jpeg" 
                 alt="ZEALOT AGRIWORKS LTD" 
-                className="h-12 w-auto mb-2"
+                className={`h-12 w-auto mb-2 ${sidebarCollapsed ? 'lg:mb-0 lg:mx-auto' : ''}`}
                 onError={(e) => {
                   // Hide image and show text fallback
                   const target = e.target as HTMLImageElement;
@@ -137,7 +151,10 @@ export default function AdminLayout() {
                   }
                 }}
               />
-              <div className="logo-fallback hidden">
+              <div className={`logo-fallback hidden ${sidebarCollapsed ? 'lg:block' : ''}`}>
+                <h1 className={`text-2xl font-bold text-green-700 ${sidebarCollapsed ? 'lg:text-lg' : ''}`}>ZA</h1>
+              </div>
+              <div className={`logo-fallback ${sidebarCollapsed ? 'lg:hidden' : 'hidden'}`}>
                 <h1 className="text-2xl font-bold text-green-700">Zealot AgriWorks</h1>
                 <p className="text-sm text-gray-500 mt-1">Management System</p>
               </div>
@@ -157,6 +174,8 @@ export default function AdminLayout() {
                     <Link
                       to={item.path}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                        sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''
+                      } ${
                         isActive
                           ? 'bg-green-50 text-green-700 font-medium'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -165,11 +184,16 @@ export default function AdminLayout() {
                         // Close mobile sidebar on navigation
                         if (window.innerWidth < 1024) {
                           setSidebarOpen(false);
+                        } else {
+                          // Collapse sidebar on desktop when a tab is clicked
+                          setSidebarCollapsed(true);
+                          setTabClicked(true);
                         }
                       }}
+                      title={sidebarCollapsed ? item.label : ''}
                     >
-                      <Icon size={20} />
-                      <span>{item.label}</span>
+                      <Icon size={20} className="flex-shrink-0" />
+                      <span className={sidebarCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
                     </Link>
                   </li>
                 );
@@ -178,37 +202,47 @@ export default function AdminLayout() {
           </nav>
 
           {/* User info and logout */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="mb-3">
-              <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-              <p className="text-xs text-gray-500">{user?.role}</p>
-            </div>
+          <div className={`p-4 border-t border-gray-200 ${sidebarCollapsed ? 'lg:p-2' : ''}`}>
+            {!sidebarCollapsed && (
+              <div className="mb-3">
+                <p className="text-sm font-medium text-gray-900">{user?.email}</p>
+                <p className="text-xs text-gray-500">{user?.role}</p>
+              </div>
+            )}
             <button
               onClick={() => {
                 // Close mobile sidebar on navigation
                 if (window.innerWidth < 1024) {
                   setSidebarOpen(false);
+                } else {
+                  setSidebarCollapsed(true);
                 }
                 navigate('/admin/profile');
               }}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-2 text-left"
+              className={`w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-2 ${
+                sidebarCollapsed ? 'lg:justify-center lg:px-2' : 'text-left'
+              }`}
+              title={sidebarCollapsed ? 'Profile Settings' : ''}
             >
-              <User size={16} />
-              <span>Profile Settings</span>
+              <User size={16} className="flex-shrink-0" />
+              <span className={sidebarCollapsed ? 'lg:hidden' : ''}>Profile Settings</span>
             </button>
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className={`w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors ${
+                sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''
+              }`}
+              title={sidebarCollapsed ? 'Sign Out' : ''}
             >
-              <LogOut size={16} />
-              <span>Sign Out</span>
+              <LogOut size={16} className="flex-shrink-0" />
+              <span className={sidebarCollapsed ? 'lg:hidden' : ''}>Sign Out</span>
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={`lg:pl-64 transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : ''}`}>
         <main className="p-4 lg:p-8">
           <Outlet />
         </main>

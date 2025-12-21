@@ -1,5 +1,5 @@
 // Farm Types
-export type FarmType = 'Dairy' | 'Broiler' | 'Layer';
+export type FarmType = 'Dairy' | 'Broiler' | 'Layer' | 'Other';
 
 export interface Farm {
   id: string;
@@ -18,6 +18,7 @@ export interface Cattle {
   id: string;
   tag_id: string;
   farm_id: string;
+  cow_name?: string;
   breed: string;
   gender: CattleGender;
   status: CattleStatus;
@@ -28,6 +29,7 @@ export interface Cattle {
   sale_date?: string;
   death_date?: string;
   sale_price?: number;
+  image_url?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -68,6 +70,7 @@ export interface Breeding {
 
 // Milking Types
 export type MilkingSession = 'Morning' | 'Afternoon' | 'Evening';
+export type MilkStatus = 'Consumption' | 'Colostrum';
 
 export interface MilkingRecord {
   id: string;
@@ -76,6 +79,7 @@ export interface MilkingRecord {
   date: string;
   session: MilkingSession;
   milk_yield: number; // in liters
+  milk_status: MilkStatus;
   staff_id: string;
   notes?: string;
   created_at: string;
@@ -84,11 +88,14 @@ export interface MilkingRecord {
 }
 
 // Poultry Types
+export type EggStatus = 'Good' | 'Broken' | 'Spoiled';
+
 export interface EggCollection {
   id: string;
   farm_id: string;
   date: string;
   number_of_eggs: number;
+  egg_status: EggStatus;
   trays?: number;
   staff_id: string;
   notes?: string;
@@ -115,6 +122,42 @@ export interface BroilerBatch {
   notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface EggSale {
+  id: string;
+  farm_id: string;
+  date: string;
+  quantity: number;
+  unit_price?: number;
+  total_amount?: number;
+  customer?: string;
+  notes?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EggStockInitial {
+  id: string;
+  farm_id: string;
+  initial_stock: number;
+  start_date: string;
+  notes?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EggStockAnalysis {
+  date: string;
+  opening_stock: number;
+  daily_collection: number;
+  total: number;
+  broken: number;
+  spoiled: number;
+  sold: number;
+  balance: number;
 }
 
 // Inventory Types
@@ -279,6 +322,8 @@ export interface DashboardStats {
   net_profit: number;
   milk_production: number;
   egg_collection: number;
+  broiler_revenue: number;
+  other_income: number;
 }
 
 export interface ChartData {

@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, DollarSign, TrendingUp, TrendingDown, Search } from
 import DatePicker from 'react-datepicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../lib/permissions';
+import TableActions from '../../components/admin/TableActions';
 
 export default function Finance() {
   const [activeTab, setActiveTab] = useState<'expenses' | 'revenue'>('expenses');
@@ -342,7 +343,44 @@ export default function Finance() {
           </div>
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Expenses</h3>
+              <TableActions
+                tableId="expenses-table"
+                title="Expenses"
+                data={expenses}
+                filteredData={expenses.filter((expense) => {
+                  const matchesSearch = expenseFilters.search === '' || 
+                    expense.description.toLowerCase().includes(expenseFilters.search.toLowerCase());
+                  const matchesFarm = expenseFilters.farm === '' || expense.farm_id === expenseFilters.farm;
+                  const matchesCategory = expenseFilters.category === '' || expense.category === expenseFilters.category;
+                  const matchesPayment = expenseFilters.paymentMethod === '' || expense.payment_method === expenseFilters.paymentMethod;
+                  const matchesDateFrom = expenseFilters.dateFrom === '' || new Date(expense.date) >= new Date(expenseFilters.dateFrom);
+                  const matchesDateTo = expenseFilters.dateTo === '' || new Date(expense.date) <= new Date(expenseFilters.dateTo);
+                  return matchesSearch && matchesFarm && matchesCategory && matchesPayment && matchesDateFrom && matchesDateTo;
+                })}
+                columns={[
+                  { key: 'date', label: 'Date' },
+                  { key: 'farm_id', label: 'Farm' },
+                  { key: 'description', label: 'Description' },
+                  { key: 'category', label: 'Category' },
+                  { key: 'amount', label: 'Amount' },
+                  { key: 'payment_method', label: 'Payment Method' },
+                ]}
+                getRowData={(expense) => {
+                  const farm = farms.find((f) => f.id === expense.farm_id);
+                  return {
+                    date: expense.date,
+                    'farm_id': farm?.name || 'N/A',
+                    description: expense.description,
+                    category: expense.category,
+                    amount: expense.amount,
+                    'payment_method': expense.payment_method,
+                  };
+                }}
+              />
+            </div>
+            <table id="expenses-table" className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -506,7 +544,44 @@ export default function Finance() {
           </div>
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Revenue</h3>
+              <TableActions
+                tableId="revenue-table"
+                title="Revenue"
+                data={revenue}
+                filteredData={revenue.filter((rev) => {
+                  const matchesSearch = revenueFilters.search === '' || 
+                    rev.customer?.toLowerCase().includes(revenueFilters.search.toLowerCase());
+                  const matchesFarm = revenueFilters.farm === '' || rev.farm_id === revenueFilters.farm;
+                  const matchesType = revenueFilters.revenueType === '' || rev.revenue_type === revenueFilters.revenueType;
+                  const matchesPayment = revenueFilters.paymentMethod === '' || rev.payment_method === revenueFilters.paymentMethod;
+                  const matchesDateFrom = revenueFilters.dateFrom === '' || new Date(rev.date) >= new Date(revenueFilters.dateFrom);
+                  const matchesDateTo = revenueFilters.dateTo === '' || new Date(rev.date) <= new Date(revenueFilters.dateTo);
+                  return matchesSearch && matchesFarm && matchesType && matchesPayment && matchesDateFrom && matchesDateTo;
+                })}
+                columns={[
+                  { key: 'date', label: 'Date' },
+                  { key: 'farm_id', label: 'Farm' },
+                  { key: 'revenue_type', label: 'Type' },
+                  { key: 'customer', label: 'Customer' },
+                  { key: 'amount', label: 'Amount' },
+                  { key: 'payment_method', label: 'Payment Method' },
+                ]}
+                getRowData={(rev) => {
+                  const farm = farms.find((f) => f.id === rev.farm_id);
+                  return {
+                    date: rev.date,
+                    'farm_id': farm?.name || 'N/A',
+                    'revenue_type': rev.revenue_type,
+                    customer: rev.customer || 'N/A',
+                    amount: rev.amount,
+                    'payment_method': rev.payment_method,
+                  };
+                }}
+              />
+            </div>
+            <table id="revenue-table" className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -521,7 +596,7 @@ export default function Finance() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {revenue.filter((rev) => {
                   const matchesSearch = revenueFilters.search === '' || 
-                    rev.customer.toLowerCase().includes(revenueFilters.search.toLowerCase());
+                    rev.customer?.toLowerCase().includes(revenueFilters.search.toLowerCase());
                   const matchesFarm = revenueFilters.farm === '' || rev.farm_id === revenueFilters.farm;
                   const matchesType = revenueFilters.revenueType === '' || rev.revenue_type === revenueFilters.revenueType;
                   const matchesPayment = revenueFilters.paymentMethod === '' || rev.payment_method === revenueFilters.paymentMethod;
@@ -588,11 +663,11 @@ export default function Finance() {
       {/* Expense Modal */}
       {showExpenseModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-5 w-full max-w-4xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingExpense ? 'Edit Expense' : 'Add Expense'}
             </h2>
-            <form onSubmit={handleExpenseSubmit} className="space-y-4">
+            <form onSubmit={handleExpenseSubmit} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Farm *</label>
                 <select
@@ -694,11 +769,11 @@ export default function Finance() {
       {/* Revenue Modal */}
       {showRevenueModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-5 w-full max-w-4xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingRevenue ? 'Edit Revenue' : 'Add Revenue'}
             </h2>
-            <form onSubmit={handleRevenueSubmit} className="space-y-4">
+            <form onSubmit={handleRevenueSubmit} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Farm *</label>
                 <select

@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { InventoryItem, StockMovement, Farm, InventoryCategory } from '../../types';
 import { Plus, Edit, Trash2, Package, ArrowRight, ArrowLeft, AlertCircle, Search } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import TableActions from '../../components/admin/TableActions';
 
 export default function Inventory() {
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -315,7 +316,31 @@ export default function Inventory() {
           </div>
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Inventory Items</h3>
+              <TableActions
+                tableId="inventory-items-table"
+                title="Inventory Items"
+                data={items}
+                filteredData={items.filter((item) => {
+                  const matchesSearch = itemFilters.search === '' || 
+                    item.name.toLowerCase().includes(itemFilters.search.toLowerCase());
+                  const matchesFarm = itemFilters.farm === '' || item.farm_id === itemFilters.farm;
+                  const matchesCategory = itemFilters.category === '' || item.category === itemFilters.category;
+                  const lowStock = isLowStock(item);
+                  const matchesLowStock = !itemFilters.lowStock || lowStock;
+                  return matchesSearch && matchesFarm && matchesCategory && matchesLowStock;
+                })}
+                columns={[
+                  { key: 'name', label: 'Item' },
+                  { key: 'category', label: 'Category' },
+                  { key: 'quantity', label: 'Quantity' },
+                  { key: 'min_stock_level', label: 'Min Level' },
+                  { key: 'unit', label: 'Unit' },
+                ]}
+              />
+            </div>
+            <table id="inventory-items-table" className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
@@ -464,7 +489,46 @@ export default function Inventory() {
           </div>
 
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Stock Movements</h3>
+              <TableActions
+                tableId="stock-movements-table"
+                title="Stock Movements"
+                data={movements}
+                filteredData={movements.filter((movement) => {
+                  const item = items.find((i) => i.id === movement.inventory_id);
+                  const matchesSearch = movementFilters.search === '' || 
+                    item?.name.toLowerCase().includes(movementFilters.search.toLowerCase());
+                  const matchesFarm = movementFilters.farm === '' || movement.farm_id === movementFilters.farm;
+                  const matchesType = movementFilters.movementType === '' || movement.movement_type === movementFilters.movementType;
+                  const matchesDateFrom = movementFilters.dateFrom === '' || new Date(movement.date) >= new Date(movementFilters.dateFrom);
+                  const matchesDateTo = movementFilters.dateTo === '' || new Date(movement.date) <= new Date(movementFilters.dateTo);
+                  return matchesSearch && matchesFarm && matchesType && matchesDateFrom && matchesDateTo;
+                })}
+                columns={[
+                  { key: 'date', label: 'Date' },
+                  { key: 'inventory_id', label: 'Item' },
+                  { key: 'movement_type', label: 'Type' },
+                  { key: 'quantity', label: 'Quantity' },
+                  { key: 'farm_id', label: 'Farm' },
+                ]}
+                getRowData={(movement) => {
+                  const item = items.find((i) => i.id === movement.inventory_id);
+                  const fromFarm = farms.find((f) => f.id === movement.farm_id);
+                  const toFarm = movement.to_farm_id ? farms.find((f) => f.id === movement.to_farm_id) : null;
+                  return {
+                    date: movement.date,
+                    'inventory_id': item?.name || 'N/A',
+                    'movement_type': movement.movement_type,
+                    quantity: movement.quantity,
+                    'farm_id': movement.movement_type === 'Transfer' 
+                      ? `${fromFarm?.name || 'N/A'} → ${toFarm?.name || 'N/A'}`
+                      : fromFarm?.name || 'N/A',
+                  };
+                }}
+              />
+            </div>
+            <table id="stock-movements-table" className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -523,11 +587,11 @@ export default function Inventory() {
       {/* Item Modal */}
       {showItemModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-5 w-full max-w-6xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingItem ? 'Edit Inventory Item' : 'Add Inventory Item'}
             </h2>
-            <form onSubmit={handleItemSubmit} className="space-y-4">
+            <form onSubmit={handleItemSubmit} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Farm *</label>
                 <select

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { MilkingRecord, MilkingSession, Farm, Cattle } from '../../types';
+import { MilkingRecord, MilkingSession, MilkStatus, Farm, Cattle } from '../../types';
 import { Plus, Edit, Trash2, Milk, Search } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { isSuperAdmin } from '../../lib/permissions';
+import TableActions from '../../components/admin/TableActions';
 
 export default function Milking() {
   const [records, setRecords] = useState<MilkingRecord[]>([]);
@@ -27,6 +28,7 @@ export default function Milking() {
     date: new Date(),
     session: 'Morning' as MilkingSession,
     milk_yield: '',
+    milk_status: 'Consumption' as MilkStatus,
     staff_id: '',
     notes: '',
   });
@@ -104,6 +106,7 @@ export default function Milking() {
         date: formData.date.toISOString().split('T')[0],
         session: formData.session,
         milk_yield: parseFloat(formData.milk_yield),
+        milk_status: formData.milk_status,
         staff_id: formData.staff_id,
         notes: formData.notes || null,
         created_by: user.id,
@@ -141,6 +144,7 @@ export default function Milking() {
       date: new Date(),
       session: 'Morning',
       milk_yield: '',
+      milk_status: 'Consumption',
       staff_id: '',
       notes: '',
     });
@@ -161,6 +165,7 @@ export default function Milking() {
       date: new Date(record.date),
       session: record.session,
       milk_yield: record.milk_yield.toString(),
+      milk_status: record.milk_status || 'Consumption',
       staff_id: record.staff_id,
       notes: record.notes || '',
     });
@@ -265,13 +270,53 @@ export default function Milking() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-900">Milking Records</h3>
+          <TableActions
+            tableId="milking-table"
+            title="Milking Records"
+            data={records}
+            filteredData={records.filter((record) => {
+              const cow = cattle.find((c) => c.id === record.cow_id);
+              const farm = farms.find((f) => f.id === record.farm_id);
+              const matchesSearch = filters.search === '' || 
+                cow?.tag_id.toLowerCase().includes(filters.search.toLowerCase());
+              const matchesFarm = filters.farm === '' || record.farm_id === filters.farm;
+              const matchesSession = filters.session === '' || record.session === filters.session;
+              const matchesDateFrom = filters.dateFrom === '' || new Date(record.date) >= new Date(filters.dateFrom);
+              const matchesDateTo = filters.dateTo === '' || new Date(record.date) <= new Date(filters.dateTo);
+              return matchesSearch && matchesFarm && matchesSession && matchesDateFrom && matchesDateTo;
+            })}
+            columns={[
+              { key: 'date', label: 'Date' },
+              { key: 'cow_id', label: 'Cow Tag' },
+              { key: 'session', label: 'Session' },
+              { key: 'milk_yield', label: 'Yield (L)' },
+              { key: 'milk_status', label: 'Status' },
+              { key: 'staff_id', label: 'Staff' },
+            ]}
+            getRowData={(record) => {
+              const cow = cattle.find((c) => c.id === record.cow_id);
+              const staffMember = staff.find((s) => s.id === record.staff_id);
+              return {
+                date: record.date,
+                'cow_id': cow?.tag_id || 'N/A',
+                session: record.session,
+                'milk_yield': record.milk_yield,
+                'milk_status': record.milk_status || 'Consumption',
+                'staff_id': staffMember?.name || 'N/A',
+              };
+            }}
+          />
+        </div>
+        <table id="milking-table" className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cow Tag</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Session</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Yield (L)</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Staff</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
@@ -315,6 +360,13 @@ export default function Milking() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     {record.milk_yield} L
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      record.milk_status === 'Consumption' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {record.milk_status || 'Consumption'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {staffMember?.name || 'N/A'}
                   </td>
@@ -344,97 +396,111 @@ export default function Milking() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-5 w-full max-w-4xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingRecord ? 'Edit Milking Record' : 'Add Milking Record'}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Farm *</label>
-                <select
-                  value={formData.farm_id}
-                  onChange={(e) => setFormData({ ...formData, farm_id: e.target.value, cow_id: '' })}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Select Farm</option>
-                  {farms.map((farm) => (
-                    <option key={farm.id} value={farm.id}>{farm.name}</option>
-                  ))}
-                </select>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Farm *</label>
+                  <select
+                    value={formData.farm_id}
+                    onChange={(e) => setFormData({ ...formData, farm_id: e.target.value, cow_id: '' })}
+                    required
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">Select Farm</option>
+                    {farms.map((farm) => (
+                      <option key={farm.id} value={farm.id}>{farm.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Cow *</label>
+                  <select
+                    value={formData.cow_id}
+                    onChange={(e) => setFormData({ ...formData, cow_id: e.target.value })}
+                    required
+                    disabled={!formData.farm_id}
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 disabled:bg-gray-100"
+                  >
+                    <option value="">Select Cow</option>
+                    {cattle.map((c) => (
+                      <option key={c.id} value={c.id}>{c.tag_id}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Date *</label>
+                  <DatePicker
+                    selected={formData.date}
+                    onChange={(date: Date) => setFormData({ ...formData, date })}
+                    dateFormat="yyyy-MM-dd"
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Session *</label>
+                  <select
+                    value={formData.session}
+                    onChange={(e) => setFormData({ ...formData, session: e.target.value as MilkingSession })}
+                    required
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="Morning">Morning</option>
+                    <option value="Afternoon">Afternoon</option>
+                    <option value="Evening">Evening</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Milk Yield (L) *</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.milk_yield}
+                    onChange={(e) => setFormData({ ...formData, milk_yield: e.target.value })}
+                    required
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Status *</label>
+                  <select
+                    value={formData.milk_status}
+                    onChange={(e) => setFormData({ ...formData, milk_status: e.target.value as MilkStatus })}
+                    required
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="Consumption">Consumption (for dairy)</option>
+                    <option value="Colostrum">Colostrum (not for dairy)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Staff *</label>
+                  <select
+                    value={formData.staff_id}
+                    onChange={(e) => setFormData({ ...formData, staff_id: e.target.value })}
+                    required
+                    className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">Select Staff</option>
+                    {staff.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cow *</label>
-                <select
-                  value={formData.cow_id}
-                  onChange={(e) => setFormData({ ...formData, cow_id: e.target.value })}
-                  required
-                  disabled={!formData.farm_id}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 disabled:bg-gray-100"
-                >
-                  <option value="">Select Cow</option>
-                  {cattle.map((c) => (
-                    <option key={c.id} value={c.id}>{c.tag_id}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                <DatePicker
-                  selected={formData.date}
-                  onChange={(date: Date) => setFormData({ ...formData, date })}
-                  dateFormat="yyyy-MM-dd"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Session *</label>
-                <select
-                  value={formData.session}
-                  onChange={(e) => setFormData({ ...formData, session: e.target.value as MilkingSession })}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="Morning">Morning (3:00 AM - 7:00 AM)</option>
-                  <option value="Afternoon">Afternoon (12:00 PM - 3:00 PM)</option>
-                  <option value="Evening">Evening (5:00 PM - 8:00 PM)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Milk Yield (Liters) *</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={formData.milk_yield}
-                  onChange={(e) => setFormData({ ...formData, milk_yield: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Staff *</label>
-                <select
-                  value={formData.staff_id}
-                  onChange={(e) => setFormData({ ...formData, staff_id: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Select Staff</option>
-                  {staff.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                  rows={2}
+                  className="w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500"
                 />
               </div>
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"

@@ -10,6 +10,8 @@ import {
   Milk,
   Egg,
   Calendar,
+  Coins,
+  Package,
 } from 'lucide-react';
 import {
   LineChart,
@@ -63,9 +65,12 @@ export default function Dashboard() {
     net_profit: 0,
     milk_production: 0,
     egg_collection: 0,
+    broiler_revenue: 0,
+    other_income: 0,
   });
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [farmContributions, setFarmContributions] = useState<{ name: string; value: number }[]>([]);
+  const [expenseBreakdown, setExpenseBreakdown] = useState<{ category: string; amount: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'year'>('month');
 
@@ -91,7 +96,7 @@ export default function Dashboard() {
       // Fetch revenue
       const { data: revenueData } = await supabase
         .from('revenue')
-        .select('amount, date, farm_id')
+        .select('amount, date, farm_id, revenue_type')
         .gte('date', startDate.toISOString().split('T')[0]);
 
       // Fetch expenses
@@ -131,6 +136,17 @@ export default function Dashboard() {
       const totalWages = wageData?.reduce((sum, w) => sum + (w.total || 0), 0) || 0;
       const totalMilk = milkData?.reduce((sum, m) => sum + (m.milk_yield || 0), 0) || 0;
       const totalEggs = eggData?.reduce((sum, e) => sum + (e.number_of_eggs || 0), 0) || 0;
+      
+      // Calculate Broiler Revenue
+      const broilerRevenue = revenueData?.filter(r => r.revenue_type === 'Broilers')
+        .reduce((sum, r) => sum + (r.amount || 0), 0) || 0;
+      
+      // Calculate Other Income (Other Products, Male Calves, Heifers - basically everything that's not Milk, Eggs, or Broilers)
+      const otherIncome = revenueData?.filter(r => 
+        r.revenue_type !== 'Milk' && 
+        r.revenue_type !== 'Eggs' && 
+        r.revenue_type !== 'Broilers'
+      ).reduce((sum, r) => sum + (r.amount || 0), 0) || 0;
 
       setStats({
         total_revenue: totalRevenue,
@@ -140,6 +156,8 @@ export default function Dashboard() {
         net_profit: totalRevenue - totalExpenses - totalSalaries - totalWages,
         milk_production: totalMilk,
         egg_collection: totalEggs,
+        broiler_revenue: broilerRevenue,
+        other_income: otherIncome,
       });
 
       // Prepare chart data (simplified - group by date)
@@ -185,6 +203,22 @@ export default function Dashboard() {
       });
 
       setFarmContributions(contributions);
+
+      // Process expense breakdown by category
+      const expenseCategoryMap = new Map<string, number>();
+      expenseData?.forEach((e) => {
+        const category = e.category || 'Miscellaneous';
+        expenseCategoryMap.set(category, (expenseCategoryMap.get(category) || 0) + (e.amount || 0));
+      });
+
+      const breakdown = Array.from(expenseCategoryMap.entries())
+        .map(([category, amount]) => ({
+          category,
+          amount,
+        }))
+        .sort((a, b) => b.amount - a.amount); // Sort by amount descending
+
+      setExpenseBreakdown(breakdown);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -260,6 +294,20 @@ export default function Dashboard() {
           color="orange"
         />
         <StatCard
+          title="Broiler Revenue"
+          value={stats.broiler_revenue}
+          icon={Coins}
+          trend="up"
+          color="green"
+        />
+        <StatCard
+          title="Other Income"
+          value={stats.other_income}
+          icon={Package}
+          trend="up"
+          color="blue"
+        />
+        <StatCard
           title="Salaries"
           value={stats.total_salaries}
           icon={Users}
@@ -318,39 +366,57 @@ export default function Dashboard() {
         {/* Farm Contributions */}
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Farm Contributions</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={farmContributions}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {farmContributions.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {farmContributions.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={farmContributions}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {farmContributions.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-gray-500">
+              <p>No farm revenue data available</p>
+            </div>
+          )}
         </div>
 
         {/* Expense Breakdown */}
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Expense Breakdown</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={[]}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-            </BarChart>
-          </ResponsiveContainer>
+          {expenseBreakdown.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={expenseBreakdown}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="category" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                />
+                <YAxis />
+                <Tooltip formatter={(value: number) => `KES ${value.toLocaleString()}`} />
+                <Legend />
+                <Bar dataKey="amount" fill="#ef4444" name="Amount" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-gray-500">
+              <p>No expense data available</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

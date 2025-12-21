@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Farm, FarmType } from '../../types';
 import { Plus, Edit, Trash2, MapPin, Search } from 'lucide-react';
+import { kenyaCounties, getConstituenciesByCounty, getCountyNames } from '../../data/kenyaCounties';
+import TableActions from '../../components/admin/TableActions';
 
 export default function Farms() {
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -17,6 +19,8 @@ export default function Farms() {
     name: '',
     type: 'Dairy' as FarmType,
     location: '',
+    county: '',
+    constituency: '',
   });
 
   useEffect(() => {
@@ -42,13 +46,24 @@ export default function Farms() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Build location string from county and constituency
+      let locationString = '';
+      if (formData.county && formData.constituency) {
+        locationString = `${formData.county}, ${formData.constituency}`;
+      } else if (formData.county) {
+        locationString = formData.county;
+      } else {
+        // Fallback to old location field if county/constituency not selected
+        locationString = formData.location;
+      }
+
       if (editingFarm) {
         const { error } = await supabase
           .from('farms')
           .update({
             name: formData.name,
             type: formData.type,
-            location: formData.location,
+            location: locationString,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingFarm.id);
@@ -60,7 +75,7 @@ export default function Farms() {
           .insert([{
             name: formData.name,
             type: formData.type,
-            location: formData.location,
+            location: locationString,
           }]);
 
         if (error) throw error;
@@ -68,7 +83,7 @@ export default function Farms() {
 
       setShowModal(false);
       setEditingFarm(null);
-      setFormData({ name: '', type: 'Dairy', location: '' });
+      setFormData({ name: '', type: 'Dairy', location: '', county: '', constituency: '' });
       fetchFarms();
     } catch (error) {
       console.error('Error saving farm:', error);
@@ -78,10 +93,31 @@ export default function Farms() {
 
   const handleEdit = (farm: Farm) => {
     setEditingFarm(farm);
+    // Parse existing location if it contains county and constituency
+    // Format expected: "County, Constituency" or just the old format
+    let county = '';
+    let constituency = '';
+    
+    if (farm.location) {
+      const parts = farm.location.split(',').map(p => p.trim());
+      if (parts.length >= 2) {
+        county = parts[0];
+        constituency = parts.slice(1).join(', '); // In case there are multiple commas
+      } else {
+        // Check if location matches a county name
+        const foundCounty = kenyaCounties.find(c => c.name === farm.location);
+        if (foundCounty) {
+          county = farm.location;
+        }
+      }
+    }
+    
     setFormData({
       name: farm.name,
       type: farm.type,
-      location: farm.location,
+      location: farm.location, // Keep old location for backward compatibility
+      county,
+      constituency,
     });
     setShowModal(true);
   };
@@ -118,7 +154,7 @@ export default function Farms() {
         <button
           onClick={() => {
             setEditingFarm(null);
-            setFormData({ name: '', type: 'Dairy', location: '' });
+            setFormData({ name: '', type: 'Dairy', location: '', county: '', constituency: '' });
             setShowModal(true);
           }}
           className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
@@ -150,6 +186,7 @@ export default function Farms() {
             <option value="Dairy">Dairy</option>
             <option value="Broiler">Broiler</option>
             <option value="Layer">Layer</option>
+            <option value="Other">Other</option>
           </select>
           <select
             value={filters.location}
@@ -165,7 +202,27 @@ export default function Farms() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-900">Farms List</h3>
+          <TableActions
+            tableId="farms-table"
+            title="Farms"
+            data={farms}
+            filteredData={farms.filter((farm) => {
+              const matchesSearch = filters.search === '' || 
+                farm.name.toLowerCase().includes(filters.search.toLowerCase());
+              const matchesType = filters.type === '' || farm.type === filters.type;
+              const matchesLocation = filters.location === '' || farm.location === filters.location;
+              return matchesSearch && matchesType && matchesLocation;
+            })}
+            columns={[
+              { key: 'name', label: 'Farm Name' },
+              { key: 'type', label: 'Type' },
+              { key: 'location', label: 'Location' },
+            ]}
+          />
+        </div>
+        <table id="farms-table" className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -201,7 +258,8 @@ export default function Farms() {
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                     farm.type === 'Dairy' ? 'bg-blue-100 text-blue-800' :
                     farm.type === 'Broiler' ? 'bg-orange-100 text-orange-800' :
-                    'bg-green-100 text-green-800'
+                    farm.type === 'Layer' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
                   }`}>
                     {farm.type}
                   </span>
@@ -233,52 +291,86 @@ export default function Farms() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-5 w-full max-w-4xl">
             <h2 className="text-2xl font-bold mb-4">
               {editingFarm ? 'Edit Farm' : 'Add New Farm'}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Farm Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Farm Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Farm Type *
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as FarmType })}
+                    required
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="Dairy">Dairy</option>
+                    <option value="Broiler">Broiler</option>
+                    <option value="Layer">Layer</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    County *
+                  </label>
+                  <select
+                    value={formData.county}
+                    onChange={(e) => {
+                      setFormData({ 
+                        ...formData, 
+                        county: e.target.value, 
+                        constituency: ''
+                      });
+                    }}
+                    required
+                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select County</option>
+                    {getCountyNames().map((county) => (
+                      <option key={county} value={county}>{county}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Constituency *
+                  </label>
+                  <select
+                    value={formData.constituency}
+                    onChange={(e) => setFormData({ ...formData, constituency: e.target.value })}
+                    required
+                    disabled={!formData.county}
+                    className={`w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                      !formData.county ? 'bg-gray-100 cursor-not-allowed text-gray-400' : ''
+                    }`}
+                  >
+                    <option value="">
+                      {formData.county ? 'Select Constituency' : 'Select County First'}
+                    </option>
+                    {formData.county && getConstituenciesByCounty(formData.county).map((constituency) => (
+                      <option key={constituency} value={constituency}>{constituency}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Farm Type
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as FarmType })}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="Dairy">Dairy</option>
-                  <option value="Broiler">Broiler</option>
-                  <option value="Layer">Layer</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"

@@ -9,7 +9,7 @@ This document outlines the database tables required for the Zealot AgriWorks Man
 CREATE TABLE farms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('Dairy', 'Broiler', 'Layer')),
+  type TEXT NOT NULL CHECK (type IN ('Dairy', 'Broiler', 'Layer', 'Other')),
   location TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -22,6 +22,7 @@ CREATE TABLE cattle (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tag_id TEXT NOT NULL UNIQUE,
   farm_id UUID REFERENCES farms(id),
+  cow_name TEXT,
   breed TEXT NOT NULL,
   gender TEXT NOT NULL CHECK (gender IN ('Male', 'Female')),
   status TEXT NOT NULL CHECK (status IN ('Calf', 'Heifer', 'Cow', 'Bull')),
@@ -32,6 +33,7 @@ CREATE TABLE cattle (
   sale_date DATE,
   death_date DATE,
   sale_price NUMERIC,
+  image_url TEXT,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -47,6 +49,7 @@ CREATE TABLE milking_records (
   date DATE NOT NULL,
   session TEXT NOT NULL CHECK (session IN ('Morning', 'Afternoon', 'Evening')),
   milk_yield NUMERIC NOT NULL,
+  milk_status TEXT NOT NULL DEFAULT 'Consumption' CHECK (milk_status IN ('Consumption', 'Colostrum')),
   staff_id UUID REFERENCES staff(id),
   notes TEXT,
   created_by UUID REFERENCES auth.users(id),
@@ -62,6 +65,7 @@ CREATE TABLE egg_collections (
   farm_id UUID REFERENCES farms(id),
   date DATE NOT NULL,
   number_of_eggs INTEGER NOT NULL,
+  egg_status TEXT NOT NULL DEFAULT 'Good' CHECK (egg_status IN ('Good', 'Broken', 'Spoiled')),
   trays INTEGER,
   staff_id UUID REFERENCES staff(id),
   notes TEXT,
